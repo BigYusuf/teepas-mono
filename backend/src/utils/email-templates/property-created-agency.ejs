@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Property Created - Teepas</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style type="text/css">
+      /* Base */
+      body {
+        margin: 0;
+        padding: 0;
+        min-width: 100%;
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.5;
+        background-color: #fafafa;
+        color: #222222;
+      }
+      a {
+        color: #0070f3;
+        text-decoration: none;
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        line-height: 1.25;
+        margin-top: 0;
+        margin-bottom: 15px;
+        text-align: center;
+      }
+      p {
+        margin-top: 0;
+        margin-bottom: 24px;
+      }
+      table td {
+        vertical-align: top;
+      }
+      /* Layout */
+      .email-wrapper {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .email-header {
+        background-color: #0070f3;
+        padding: 24px;
+        color: #ffffff;
+      }
+      .email-body {
+        padding: 24px;
+        background-color: #ffffff;
+      }
+      .email-footer {
+        background-color: #f6f6f6;
+        padding: 24px;
+      }
+      /* Buttons */
+      .button {
+        display: inline-block;
+        background-color: #0070f3;
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 4px;
+      }
+      .property-card {
+        border: 1px solid #eaeaea;
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 24px;
+      }
+      .property-card img {
+        max-width: 100%;
+        border-radius: 6px;
+      }
+      .property-info {
+        margin-top: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="email-wrapper">
+      <div class="email-header">
+        <h1>New Property Created</h1>
+      </div>
+      <div class="email-body">
+        <p>Hello <%= name %>,</p>
+        <p>
+          Your property titled <strong><%= propertyTitle %></strong> has been
+          successfully created on <strong>Teepas</strong>.
+        </p>
+
+        <div class="property-card">
+          <% if (propertyImage) { %>
+            <img src="<%= propertyImage %>" alt="Property Image" />
+          <% } %>
+          <div class="property-info">
+            <p><strong>Location:</strong> <%= propertyLocation %></p>
+            <p><strong>Price:</strong> ₦<%= propertyPrice %></p>
+            <p><strong>Status:</strong> <%= propertyStatus %></p>
+          </div>
+        </div>
+
+        <p>
+          You can view or edit your property anytime by clicking the button below:
+        </p>
+
+        <p style="text-align: center">
+          <a href="<%= propertyLink %>" class="button">View Property</a>
+        </p>
+
+        <p>
+          Thank you for choosing Teepas to showcase your property. We’re excited
+          to help you connect with potential clients!
+        </p>
+      </div>
+      <div class="email-footer">
+        <p>
+          Need help? Contact our support team at
+          <a href="mailto:support@teepas.com">support@teepas.com</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

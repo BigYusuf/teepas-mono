@@ -1,0 +1,369 @@
+//agent
+enum AgentRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+//agency
+enum ApplicationAgencyStatus {
+  PENDING
+  INSPECTION_APPROVED
+  APPROVED
+  REJECTED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum BoostStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+
+enum EventSliderStatus {
+  BOOKED
+  ACTIVE
+  EXPIRED
+}
+
+enum EventSliderSlot {
+  HOME_SLIDER_1
+  HOME_SLIDER_2
+  HOME_SLIDER_3
+  HOME_SLIDER_4
+  HOME_SLIDER_5
+  CATEGORY_SLIDER
+}
+
+enum agencyddressType {
+  HEAD_OFFICE
+  BRANCH
+  WAREHOUSE
+}
+
+enum AgencySteps {
+  incomplete
+  pending_address
+  pending_docs
+  pending_bank
+  complete
+}
+
+//users
+enum addressType {
+  Home
+  Work
+  Other
+}
+
+enum ApplicationUserStatus {
+  PENDING
+  INSPECTION_SCHEDULED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+//properties
+enum ShowAddress{
+  ALL
+  APPROVED_ONLY
+}
+
+enum PropertyType {
+  SELF_CONTAIN
+  MINI_FLAT
+  ONE_BEDROOM_FLAT
+  TWO_BEDROOM_FLAT
+  THREE_BEDROOM_FLAT
+  FOUR_BEDROOM_FLAT
+  FIVE_BEDROOM_FLAT
+  ROOM_ONLY
+  SHOP
+  OFFICE_SPACE
+  SHORT_LET
+  LAND
+  OTHER
+}
+
+enum FloorType {
+  TILED
+  CEMENT
+  WOODEN
+  MARBLE
+  VINYL
+  LAMINATE
+}
+
+enum RoofType {
+  ALUMINUM
+  ASBESTOS
+  CONCRETE
+  THATCH
+  ZINC
+}
+
+enum WallFinish {
+  PAINTED
+  WALLPAPER
+  BARE_CEMENT
+  POP
+}
+
+enum CeilingType {
+  POP
+  PVC
+  WOODEN
+  GYPSUM_BOARD
+}
+
+enum DesignType {
+  BUNGALOW
+  DUPLEX
+  DETACHED_HOUSE
+  SEMI_DETACHED_HOUSE
+  TERRACED_HOUSE
+  MAISONETTE
+  PENTHOUSE
+  STOREY_BUILDING
+  FACE_ME_I_FACE_YOU
+  BLOCK_OF_FLATS
+  MANSION
+  OTHER
+}
+
+enum PropertyPurpose {
+  RESIDENTIAL
+  COMMERCIAL
+  MIXED_USE
+  SHORT_LET
+  HOSTEL
+  TENEMENT
+  SERVICED_APARTMENT
+}
+
+enum EconomicClass {
+  LUXURY
+  MIDDLE_CLASS
+  LOW_INCOME
+  INFORMAL
+}
+
+enum BuildingMaterial {
+  CEMENT_BLOCK
+  MUD
+  WOODEN
+  CONTAINER
+  BRICK
+  BAMBOO_THATCH
+}
+
+enum PropertyCategory {
+  RENT
+  SALE
+  LEASE
+  SHORT_LET
+}
+
+enum ListingStatus {
+  ACTIVE
+  PENDING
+  RENTED
+  SOLD
+  ARCHIVED
+  DRAFT
+}
+
+enum FurnishingStatus {
+  FURNISHED
+  SEMI_FURNISHED
+  UNFURNISHED
+}
+
+enum ParkingType {
+  GARAGE
+  CARPORT
+  DRIVEWAY
+  STREET
+  VALET
+  COMPOUND
+  OFF_SITE
+  NO_PARKING
+}
+
+enum OwnershipType {
+  FREEHOLD
+  LEASEHOLD
+  SHARE_OF_FREEHOLD
+  COMMONHOLD
+}
+
+enum BathroomType {
+  EN_SUITE
+  SHARED
+  JACK_AND_JILL
+  HALF_BATH
+  FULL_BATH
+}
+
+enum BedroomType {
+  MASTER_BEDROOM
+  GUEST_BEDROOM
+  CHILDRENS_BEDROOM
+  STUDIO_ROOM
+  DORMITORY
+}
+
+enum SecurityFeature {
+  CCTV
+  GATED_COMMUNITY
+  SECURITY_GUARD
+  ALARM_SYSTEM
+  INTERCOM
+  FIREPLACE
+  NO_SECURITY
+}
+
+enum OutdoorFeature {
+  GARDEN
+  BALCONY
+  TERRACE
+  SWIMMING_POOL
+  PLAYGROUND
+  OUTDOOR_KITCHEN
+}
+
+enum IndoorFeature {
+  AIR_CONDITIONING
+  HEATING
+  FIREPLACE
+  HARDWOOD_FLOORS
+  WALK_IN_CLOSET
+  LAUNDRY_ROOM
+}
+
+enum Amenity {
+  GYM
+  SPA
+  CLUBHOUSE
+  TENNIS_COURT
+  BASKETBALL_COURT
+  GOLF_COURSE
+}
+
+enum NearbyLocation {
+  SCHOOL
+  HOSPITAL
+  SHOPPING_MALL
+  PUBLIC_TRANSPORT
+  PARK
+  RESTAURANT
+}
+
+enum ConditionStatus {
+  NEW
+  GOOD
+  NEEDS_RENOVATION
+  OLD
+}
+
+enum Tag {
+  NEW_LISTING
+  PRICE_REDUCED
+  OPEN_HOUSE
+  HOT_PROPERTY
+  EXCLUSIVE
+}
+
+enum Currency {
+  USD
+  EUR
+  GBP
+  NGN
+  KES
+  GHS
+  ZAR
+}
+
+enum Duration {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum PaymentFrequency {
+  ONE_TIME
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum LeaseTerm {
+  SIX_MONTHS
+  ONE_YEAR
+  TWO_YEARS
+  THREE_YEARS
+  FIVE_YEARS
+}
+
+enum AvailabilityStatus {
+  AVAILABLE_NOW
+  AVAILABLE_FROM_DATE
+  COMING_SOON
+}
+
+enum ConstructionStatus {
+  COMPLETED
+  UNDER_CONSTRUCTION
+  PLANNED
+}
+
+enum HeatingType {
+  CENTRAL_HEATING
+  ELECTRIC_HEATING
+  GAS_HEATING
+  SOLAR_HEATING
+  NO_HEATING
+}
+
+enum CoolingType {
+  CENTRAL_COOLING
+  WINDOW_UNIT
+  SPLIT_SYSTEM
+  EVAPORATIVE_COOLING
+  NO_COOLING
+}
+
+enum WaterSupplyType {
+  MUNICIPAL
+  WELL
+  BOREHOLE
+  RAINWATER_HARVESTING
+  NO_WATER_SUPPLY
+}
+
+enum ElectricityType {
+  GRID
+  SOLAR
+  GENERATOR
+  INVERTER
+  GRID_SOLAR
+  GRID_GENERATOR
+  GRID_INVERTER_SOLAR
+  NO_ELECTRICITY
+}
+
+enum MeterType {
+  PREPAID
+  POSTPAID
+  NO_METER
+}

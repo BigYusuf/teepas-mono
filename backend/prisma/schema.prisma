@@ -1,0 +1,1421 @@
+//agent
+enum AgentRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+//agency
+enum ApplicationAgencyStatus {
+  PENDING
+  INSPECTION_APPROVED
+  APPROVED
+  REJECTED
+}
+
+enum ApplicationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum BoostStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum EventSliderStatus {
+  BOOKED
+  ACTIVE
+  EXPIRED
+}
+
+enum EventSliderSlot {
+  HOME_SLIDER_1
+  HOME_SLIDER_2
+  HOME_SLIDER_3
+  HOME_SLIDER_4
+  HOME_SLIDER_5
+  CATEGORY_SLIDER
+}
+
+enum agencyddressType {
+  HEAD_OFFICE
+  BRANCH
+  WAREHOUSE
+}
+
+enum AgencySteps {
+  incomplete
+  pending_address
+  pending_docs
+  pending_bank
+  complete
+}
+
+//users
+enum addressType {
+  Home
+  Work
+  Other
+}
+
+enum ApplicationUserStatus {
+  PENDING
+  INSPECTION_SCHEDULED
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+//properties
+enum ShowAddress {
+  ALL
+  APPROVED_ONLY
+}
+
+enum PropertyType {
+  SELF_CONTAIN
+  MINI_FLAT
+  ONE_BEDROOM_FLAT
+  TWO_BEDROOM_FLAT
+  THREE_BEDROOM_FLAT
+  FOUR_BEDROOM_FLAT
+  FIVE_BEDROOM_FLAT
+  ROOM_ONLY
+  SHOP
+  OFFICE_SPACE
+  SHORT_LET
+  LAND
+  OTHER
+}
+
+enum FloorType {
+  TILED
+  CEMENT
+  WOODEN
+  MARBLE
+  VINYL
+  LAMINATE
+}
+
+enum RoofType {
+  ALUMINUM
+  ASBESTOS
+  CONCRETE
+  THATCH
+  ZINC
+}
+
+enum WallFinish {
+  PAINTED
+  WALLPAPER
+  BARE_CEMENT
+  POP
+}
+
+enum CeilingType {
+  POP
+  PVC
+  WOODEN
+  GYPSUM_BOARD
+}
+
+enum DesignType {
+  BUNGALOW
+  DUPLEX
+  DETACHED_HOUSE
+  SEMI_DETACHED_HOUSE
+  TERRACED_HOUSE
+  MAISONETTE
+  PENTHOUSE
+  STOREY_BUILDING
+  FACE_ME_I_FACE_YOU
+  BLOCK_OF_FLATS
+  MANSION
+  OTHER
+}
+
+enum PropertyPurpose {
+  RESIDENTIAL
+  COMMERCIAL
+  MIXED_USE
+  SHORT_LET
+  HOSTEL
+  TENEMENT
+  SERVICED_APARTMENT
+}
+
+enum EconomicClass {
+  LUXURY
+  MIDDLE_CLASS
+  LOW_INCOME
+  INFORMAL
+}
+
+enum BuildingMaterial {
+  CEMENT_BLOCK
+  MUD
+  WOODEN
+  CONTAINER
+  BRICK
+  BAMBOO_THATCH
+}
+
+enum PropertyCategory {
+  RENT
+  SALE
+  LEASE
+  SHORT_LET
+}
+
+enum ListingStatus {
+  ACTIVE
+  PENDING
+  RENTED
+  SOLD
+  ARCHIVED
+  DRAFT
+}
+
+enum FurnishingStatus {
+  FURNISHED
+  SEMI_FURNISHED
+  UNFURNISHED
+}
+
+enum ParkingType {
+  GARAGE
+  CARPORT
+  DRIVEWAY
+  STREET
+  VALET
+  COMPOUND
+  OFF_SITE
+  NO_PARKING
+}
+
+enum OwnershipType {
+  FREEHOLD
+  LEASEHOLD
+  SHARE_OF_FREEHOLD
+  COMMONHOLD
+}
+
+enum BathroomType {
+  EN_SUITE
+  SHARED
+  JACK_AND_JILL
+  HALF_BATH
+  FULL_BATH
+}
+
+enum BedroomType {
+  MASTER_BEDROOM
+  GUEST_BEDROOM
+  CHILDRENS_BEDROOM
+  STUDIO_ROOM
+  DORMITORY
+}
+
+enum SecurityFeature {
+  CCTV
+  GATED_COMMUNITY
+  SECURITY_GUARD
+  ALARM_SYSTEM
+  INTERCOM
+  FIREPLACE
+  NO_SECURITY
+}
+
+enum OutdoorFeature {
+  GARDEN
+  BALCONY
+  TERRACE
+  SWIMMING_POOL
+  PLAYGROUND
+  OUTDOOR_KITCHEN
+}
+
+enum IndoorFeature {
+  AIR_CONDITIONING
+  HEATING
+  FIREPLACE
+  HARDWOOD_FLOORS
+  WALK_IN_CLOSET
+  LAUNDRY_ROOM
+}
+
+enum Amenity {
+  GYM
+  SPA
+  CLUBHOUSE
+  TENNIS_COURT
+  BASKETBALL_COURT
+  GOLF_COURSE
+}
+
+enum NearbyLocation {
+  SCHOOL
+  HOSPITAL
+  SHOPPING_MALL
+  PUBLIC_TRANSPORT
+  PARK
+  RESTAURANT
+}
+
+enum ConditionStatus {
+  NEW
+  GOOD
+  NEEDS_RENOVATION
+  OLD
+}
+
+enum Tag {
+  NEW_LISTING
+  PRICE_REDUCED
+  OPEN_HOUSE
+  HOT_PROPERTY
+  EXCLUSIVE
+}
+
+enum Currency {
+  USD
+  EUR
+  GBP
+  NGN
+  KES
+  GHS
+  ZAR
+}
+
+enum Duration {
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum PaymentFrequency {
+  ONE_TIME
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum LeaseTerm {
+  SIX_MONTHS
+  ONE_YEAR
+  TWO_YEARS
+  THREE_YEARS
+  FIVE_YEARS
+}
+
+enum AvailabilityStatus {
+  AVAILABLE_NOW
+  AVAILABLE_FROM_DATE
+  COMING_SOON
+}
+
+enum ConstructionStatus {
+  COMPLETED
+  UNDER_CONSTRUCTION
+  PLANNED
+}
+
+enum HeatingType {
+  CENTRAL_HEATING
+  ELECTRIC_HEATING
+  GAS_HEATING
+  SOLAR_HEATING
+  NO_HEATING
+}
+
+enum CoolingType {
+  CENTRAL_COOLING
+  WINDOW_UNIT
+  SPLIT_SYSTEM
+  EVAPORATIVE_COOLING
+  NO_COOLING
+}
+
+enum WaterSupplyType {
+  MUNICIPAL
+  WELL
+  BOREHOLE
+  RAINWATER_HARVESTING
+  NO_WATER_SUPPLY
+}
+
+enum ElectricityType {
+  GRID
+  SOLAR
+  GENERATOR
+  INVERTER
+  GRID_SOLAR
+  GRID_GENERATOR
+  GRID_INVERTER_SOLAR
+  NO_ELECTRICITY
+}
+
+enum MeterType {
+  PREPAID
+  POSTPAID
+  NO_METER
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model images {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  fileId    String
+  url       String
+  users     users[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model users {
+  id                   String                 @id @default(auto()) @map("_id") @db.ObjectId
+  name                 String
+  email                String                 @unique
+  role                 String                 @default("user")
+  password             String?
+  following            String[]
+  avatar               images?                @relation(fields: [imagesId], references: [id])
+  agencyReviews        agencyReviews[]
+  imagesId             String?                @db.ObjectId
+  followings           followers[]
+  applications         propertyApplications[]
+  propertyTransactions propertyTransactions[]
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime?          @updatedAt
+  propertyMonitors propertyMonitors[]
+}
+
+model agencyReviews {
+  id       String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String    @db.ObjectId
+  user     users     @relation(fields: [userId], references: [id])
+  rating   Float
+  reviews  String?
+  agencyId String?   @db.ObjectId
+  agencies agencies? @relation(fields: [agencyId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model agencyRoles {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  agencyId    String    @db.ObjectId
+  name        String // Agent, Accountant, Lawyer, etc
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime? @updatedAt
+
+  agency agencies @relation(fields: [agencyId], references: [id])
+
+  permissions   agencyRolePermissions[]
+  members       agencyMembership[]
+  agencyInvites agencyInvites[]
+}
+
+model agencyRolePermissions {
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  roleId       String @db.ObjectId
+  permissionId String @db.ObjectId
+
+  role       agencyRoles @relation(fields: [roleId], references: [id])
+  permission permissions @relation(fields: [permissionId], references: [id])
+}
+
+model agencyMembership {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  agencyId String @db.ObjectId
+  agentId  String @db.ObjectId
+  roleId   String @db.ObjectId
+
+  status      AgentStatus @default(ACTIVE)
+  invitedById String?     @db.ObjectId
+
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency        agencies     @relation(fields: [agencyId], references: [id])
+  agent         agents       @relation(fields: [agentId], references: [id])
+  role          roles        @relation(fields: [roleId], references: [id])
+  agencyRoles   agencyRoles? @relation(fields: [agencyRolesId], references: [id])
+  agencyRolesId String?      @db.ObjectId
+}
+
+model agencyInvites {
+  id    String @id @default(auto()) @map("_id") @db.ObjectId
+  email String
+  token String @unique
+
+  agencyId String @db.ObjectId
+  roleId   String @db.ObjectId
+
+  invitedById String @db.ObjectId
+
+  status InviteStatus @default(PENDING)
+
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency agencies    @relation(fields: [agencyId], references: [id])
+  role   agencyRoles @relation(fields: [roleId], references: [id])
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model followers {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  userId   String @db.ObjectId
+  agencyId String @db.ObjectId
+
+  user     users     @relation(fields: [userId], references: [id])
+  agencies agencies? @relation(fields: [agencyId], references: [id])
+
+  @@unique([userId, agencyId]) // One user can follow the same agency only once
+}
+
+model agencies {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  name     String
+  bio      String?
+  category String
+
+  operatingAreas String[]
+  website        String?
+  email          String?
+  phone          String?
+  supportEmail   String?
+  openingHours   String?
+
+  commissionRate    Float?
+  servicesOffered   String[]
+  yearEstablished   Int?
+  businessRegNumber String?
+  taxId             String?
+
+  verified  Boolean   @default(false)
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  step        String @default("incomplete")
+  currentStep Int    @default(1)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  avatar      String?
+  coverBanner String?
+  logoUrl     String?
+  videoIntro  String?
+  socialLinks Json[]
+
+  // 🔥 core relationship
+  memberships agencyMembership[]
+
+  // everything else unchanged
+  followers  followers[]
+  reviews    agencyReviews[]
+  properties properties[]
+
+  invites   agencyInvites[]
+  addresses agencyAddresses[]
+
+  documents            agencyDocuments?
+  bankAccounts         agencyBankAccounts[]
+  agencyRoles          agencyRoles[]
+  propertyAnalytics    propertyAnalytics[]
+  agencyAnalytics      agencyAnalytics?       @relation(fields: [agencyAnalyticsId], references: [id])
+  agencyAnalyticsId    String?                @db.ObjectId
+  propertyApplications propertyApplications[]
+  marketingEvents      marketingEvents[]
+  propertyBoosts       propertyBoosts[]
+  agencyCredits        agencyCredits?
+  creditTransactions   creditTransactions[]
+  propertyTransactions propertyTransactions[]
+}
+
+model agencyAddresses {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  agencyId  String           @db.ObjectId
+  label     agencyddressType // e.g. "HEAD_OFFICE" | "BRANCH" | "WAREHOUSE"
+  name      String
+  street    String
+  city      String
+  zip       String
+  state     String
+  country   String
+  isDefault Boolean          @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency agencies @relation(fields: [agencyId], references: [id])
+}
+
+enum AgentStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+model agents {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  name        String
+  email       String @unique
+  phoneNumber String
+  country     String
+  password    String
+
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  // 🔥 memberships replace agencyId + roleId
+  memberships agencyMembership[]
+
+  properties        properties[]
+  agentTaskProgress agentTaskProgress[]
+  propertyDocuments propertyDocuments[]
+}
+
+enum TaskCategory {
+  ONBOARDING
+  PROFILE
+  DOCUMENTS
+  PROPERTY
+  FINANCE
+  CLIENTS
+  MARKETING
+  SALES
+  TEAM
+  ADVANCED
+}
+
+model tasks {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  description   String
+  category      TaskCategory
+  points        Int          @default(10)
+  rewardCredits Int          @default(0)
+  sortOrder     Int
+  isRequired    Boolean      @default(true)
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+
+  agentProgress agentTaskProgress[]
+}
+
+model agentTaskProgress {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  agentId     String    @db.ObjectId
+  taskId      String    @db.ObjectId
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  agent agents @relation(fields: [agentId], references: [id])
+  task  tasks  @relation(fields: [taskId], references: [id])
+
+  /// 🔥 Prevent duplicate agent-task assignments
+  @@unique([agentId, taskId])
+}
+
+model agencyDocuments {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  agencyId            String    @unique @db.ObjectId
+  businessCertificate String? // CAC or business registration document
+  proofOfAddress      String? // Utility bill / tenancy agreement
+  ownerIdCard         String? // Government ID
+  insuranceDocument   String? // Optional
+  signedAgreement     String? // Digital or PDF signature file
+  verifiedByAdmin     Boolean   @default(false)
+  verifiedAt          DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime? @updatedAt
+
+  agency agencies @relation(fields: [agencyId], references: [id])
+}
+
+model agencyBankAccounts {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  agencyId      String    @db.ObjectId
+  bankName      String
+  accountName   String
+  accountNumber String
+  currency      String    @default("NGN")
+  isPrimary     Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime? @updatedAt
+
+  agency agencies @relation(fields: [agencyId], references: [id])
+}
+
+model roles {
+  id          String            @id @default(auto()) @map("_id") @db.ObjectId
+  key         String            @unique
+  name        String
+  description String?
+  isDefault   Boolean           @default(false) // Default roles like ADMIN, MANAGER, etc.
+  permissions rolePermissions[]
+
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime?          @updatedAt
+  agencyMembership agencyMembership[]
+}
+
+model permissions {
+  id                    String                  @id @default(auto()) @map("_id") @db.ObjectId
+  key                   String                  @unique
+  name                  String
+  description           String?
+  category              String? // e.g. "Property", "Finance", "Agency"
+  roles                 rolePermissions[]
+  agencyRolePermissions agencyRolePermissions[]
+}
+
+model rolePermissions {
+  id           String      @id @default(auto()) @map("_id") @db.ObjectId
+  roleId       String      @db.ObjectId
+  permissionId String      @db.ObjectId
+  role         roles       @relation(fields: [roleId], references: [id])
+  permission   permissions @relation(fields: [permissionId], references: [id])
+}
+
+model site_config {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  categories    String[]
+  subCategories Json
+  logo          String?
+  banner        String?
+}
+
+model promotions {
+  id                 String               @id @default(auto()) @map("_id") @db.ObjectId
+  public_name        String
+  discountType       String
+  discountValue      Float
+  discountCode       String               @unique
+  agentId            String               @db.ObjectId
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime?            @updatedAt
+  creditTransactions creditTransactions[]
+}
+
+model properties {
+  id                   String            @id @default(auto()) @map("_id") @db.ObjectId
+  title                String
+  slug                 String            @unique
+  description          String?
+  category             PropertyCategory?
+  type                 PropertyType?
+  designType           DesignType?
+  purpose              PropertyPurpose?
+  economicClass        EconomicClass?
+  customSpecifications Json?
+  customFeatures       Json?
+
+  tags          String[]
+  furnishing    FurnishingStatus?
+  sizeSqm       Float?
+  landSizeSqm   Float?
+  yearBuilt     Int?
+  condition     ConditionStatus?
+  availableFrom DateTime?
+
+  video_url String?
+  address   String?
+  city      String?
+  state     String?
+  country   String?
+  showTo    ShowAddress?
+
+  // Location coordinates
+  coordinates Json?
+
+  // Property stats
+  ratings   Float? @default(0)
+  views     Int?   @default(0)
+  favorites Int?   @default(0)
+
+  // Structure — now related
+  structureId String?            @unique @db.ObjectId
+  structure   PropertyStructure? @relation(fields: [structureId], references: [id])
+
+  // Utilities & materials
+  electricity      ElectricityType?
+  electricBilling  MeterType?
+  waterSupply      WaterSupplyType?
+  cooling          CoolingType?
+  heating          HeatingType?
+  construction     ConstructionStatus?
+  availability     AvailabilityStatus?
+  floorType        FloorType?
+  roofType         RoofType?
+  wallFinish       WallFinish?
+  ceilingType      CeilingType?
+  buildingMaterial BuildingMaterial?
+  amenities        String[]
+  nearByLocation   String[]
+
+  // Status
+  status       ListingStatus @default(DRAFT)
+  progressStep Int           @default(1) // 1–5 depending on step
+  isPublished  Boolean       @default(false)
+  verified     Boolean?      @default(false)
+  verifiedAt   DateTime?
+  verifiedBy   String?       @db.ObjectId
+  isDeleted    Boolean?      @default(false)
+  deletedAt    DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime?     @updatedAt
+
+  // Relations
+  images               PropertyImages[]
+  documents            propertyDocuments[]
+  pricing              propertyPricing?
+  floorPlans           floorPlan[]
+  propertyBoosts       propertyBoosts[]
+  propertyAnalytics    propertyAnalytics?
+  propertyTransactions propertyTransactions[]
+  applications         propertyApplications[]
+
+  agencyId String   @db.ObjectId
+  agency   agencies @relation(fields: [agencyId], references: [id])
+
+  agentId           String?             @db.ObjectId
+  agent             agents?             @relation(fields: [agentId], references: [id])
+  PropertyVideo     PropertyVideo[]
+  eventPropertyLink eventPropertyLink[]
+}
+
+model PropertyImages {
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  propertyId String     @db.ObjectId
+  property   properties @relation(fields: [propertyId], references: [id])
+  fileId     String // from ImageKit or Cloudinary
+  url        String
+  caption    String?
+  type       String? // e.g. INTERIOR, EXTERIOR
+  isCover    Boolean    @default(false)
+  order      Int?       @default(0)
+  createdAt  DateTime   @default(now())
+}
+
+model PropertyStructureLocale {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  structureId String   @db.ObjectId
+  countryCode String // e.g. "NG", "US", "UK"
+  localName   String // e.g. "Self Contain", "Studio"
+  description String?
+  examples    String[]
+
+  structure PropertyStructure @relation(fields: [structureId], references: [id])
+}
+
+model PropertyStructure {
+  id              String          @id @default(auto()) @map("_id") @db.ObjectId
+  bedrooms        Int? // Number of bedrooms
+  bathrooms       Int?
+  toilets         Int?
+  livingRooms     Int?
+  kitchens        Int?
+  kitchenType     KitchenType? // PRIVATE, SHARED, OUTDOOR
+  toiletLocation  ToiletLocation? // INDOOR, OUTDOOR, SHARED
+  isWholeBuilding Boolean?        @default(false)
+  isServiced      Boolean?        @default(false)
+  floorLevel      Int? // e.g., 1st floor, 2nd floor (for apartments)
+  hasBalcony      Boolean?        @default(false)
+  petPolicy       PetPolicy?      @default(NOT_ALLOWED)
+  petDetails      Json? // e.g. { type: "dog", allowed: false, fee: 5000 }
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  // relations
+  property                properties?
+  PropertyStructureLocale PropertyStructureLocale[]
+}
+
+enum KitchenType {
+  PRIVATE
+  SHARED
+  OUTDOOR
+}
+
+enum ToiletLocation {
+  INDOOR
+  OUTDOOR
+  SHARED
+}
+
+enum PetPolicy {
+  NOT_ALLOWED
+  ALLOWED
+  NEGOTIABLE
+  REQUIRES_APPROVAL
+}
+
+model propertyPricing {
+  id               String            @id @default(auto()) @map("_id") @db.ObjectId
+  propertyId       String            @unique @db.ObjectId
+  basePrice        Float
+  cautionFee       Float? // security deposit
+  agentFee         Float? // commission or agency charge
+  legalFee         Float? // optional
+  serviceCharge    Float? // optional
+  paymentType      PropertyCategory? // e.g. RENT, SALE, LEASE
+  paymentFrequency PaymentFrequency?
+  leaseTerm        LeaseTerm?
+  currency         String?           @default("NGN")
+  negotiable       Boolean?          @default(false)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime?         @updatedAt
+
+  property properties @relation(fields: [propertyId], references: [id])
+}
+
+model PropertyVideo {
+  id         String     @id @default(auto()) @map("_id") @db.ObjectId
+  propertyId String     @db.ObjectId
+  property   properties @relation(fields: [propertyId], references: [id])
+  fileId     String // from ImageKit / Cloudinary
+  url        String
+  thumbnail  String?
+  title      String?
+  duration   Float?
+  createdAt  DateTime   @default(now())
+}
+
+model floorPlan {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  propertyId  String     @db.ObjectId
+  property    properties @relation(fields: [propertyId], references: [id])
+  fileId      String
+  name        String? // e.g., "Ground Floor", "3-Bedroom Layout"
+  description String? // Optional details
+  imageUrl    String? // Link to image or PDF (Cloudinary, S3, etc.)
+  layout      Json? // Optional structured data { bedrooms: 3, bathrooms: 2 }
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model propertyDocuments {
+  id           String       @id @default(auto()) @map("_id") @db.ObjectId
+  propertyId   String?      @db.ObjectId
+  name         String // e.g. "Certificate of Occupancy"
+  type         DocumentType // enum, e.g. COFO, SURVEY, DEED, ALLOCATION, OTHERS
+  url          String // file URL (e.g., from Cloudinary)
+  fileId       String
+  uploadedById String?      @db.ObjectId
+  verified     Boolean?     @default(false)
+  verifiedAt   DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime?    @updatedAt
+
+  // relations
+  property   properties? @relation(fields: [propertyId], references: [id])
+  uploadedBy agents?     @relation(fields: [uploadedById], references: [id])
+}
+
+enum DocumentType {
+  COFO // Certificate of Occupancy
+  SURVEY_PLAN
+  DEED
+  ALLOCATION_LETTER
+  BUILDING_PLAN
+  TAX_RECEIPT
+  OTHER
+}
+
+model userAnalytics {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @unique
+  country         String?
+  city            String?
+  device          String?
+  lastVisited     DateTime
+  actions         Json?
+  recommendations Json?
+  lastTrained     DateTime @default(now())
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model propertyAnalytics {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  propertyId   String   @unique @db.ObjectId
+  agencyId     String   @db.ObjectId
+  views        Int      @default(0)
+  inquiries    Int      @default(0)
+  saved        Int      @default(0)
+  applications Int      @default(0)
+  rents        Int      @default(0)
+  sales        Int      @default(0)
+  lastViewedAt DateTime
+
+  boostedViews Int @default(0)
+  boostedRents Int @default(0)
+  boostedSales Int @default(0)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency   agencies   @relation(fields: [agencyId], references: [id])
+  property properties @relation(fields: [propertyId], references: [id])
+}
+
+model agencyAnalytics {
+  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  totalVisitors Int    @default(0)
+
+  countryStats Json? // Store aggregated country data { "US": 20, "IN": 50, "UK": 15 }
+  cityStats    Json? // Store aggregated city data { "New York": 10, "Delhi": 25 }
+  deviceStats  Json? // Store aggregated device data { "Mobile": 50, "Desktop": 30 }
+
+  lastVisitedAt DateTime
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime?  @updatedAt
+  agencies  agencies[]
+}
+
+model uniqueAgencyVisitors {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  agencyId  String   @db.ObjectId
+  userId    String   @db.ObjectId
+  visitedAt DateTime @default(now())
+
+  @@unique([agencyId, userId])
+}
+
+model propertyApplications {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String  @db.ObjectId
+  propertyId String  @db.ObjectId
+  agencyId   String? @db.ObjectId
+
+  // New fields 👇
+  userStatus    ApplicationUserStatus   @default(PENDING)
+  agencyStatus  ApplicationAgencyStatus @default(PENDING)
+  overallStatus ApplicationStatus       @default(PENDING)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  user     users      @relation(fields: [userId], references: [id])
+  property properties @relation(fields: [propertyId], references: [id])
+  agency   agencies?  @relation(fields: [agencyId], references: [id])
+}
+
+model address {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String      @db.ObjectId
+  label     addressType
+  name      String
+  street    String
+  city      String
+  zip       String
+  country   String
+  isDefault Boolean     @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model notifications {
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  creatorId     String? //  @db.ObjectId
+  receiverId    String
+  redirect_link String?
+  title         String
+  message       String
+  status        String  @default("Unread")
+  type          String?
+  channel       String? // EMAIL | PUSH | IN_APP | SMS
+  meta          Json?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model conversationGroup {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  isGroup        Boolean   @default(false)
+  name           String?
+  creatorId      String
+  participantIds String[]  @db.ObjectId
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime? @updatedAt
+}
+
+model participant {
+  id             String    @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String    @db.ObjectId
+  userId         String?   @db.ObjectId
+  agentId        String?   @db.ObjectId
+  lastSeenAt     DateTime?
+  isOnline       Boolean   @default(false)
+  unreadCount    Int       @default(0)
+  muted          Boolean   @default(false)
+  joinedAt       DateTime  @default(now())
+}
+
+model message {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  conversationId String   @db.ObjectId
+  senderId       String   @db.ObjectId
+  senderType     String
+  content        String?
+  attachments    String[]
+  status         String   @default("sent")
+  createdAt      DateTime @default(now())
+
+  @@unique([conversationId, senderId, content, createdAt])
+}
+
+// ----------------------
+// ENUMS
+// ----------------------
+enum EventType {
+  AGENCY
+  PROPERTY
+  GLOBAL
+}
+
+enum EventStatus {
+  DRAFT
+  ACTIVE
+  ENDED
+  UPCOMING
+  SUSPENDED
+  TERMINATED
+}
+
+enum PlatformType {
+  WEB
+  MOBILE
+  BOTH
+}
+
+enum BoostTier {
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum CreditType {
+  EARNED
+  SPENT
+  PURCHASED
+  REFUNDED
+}
+
+enum AdminStatus {
+  ACTIVE
+  SUSPENDED
+  PENDING
+  DEACTIVATED
+}
+
+// ----------------------
+// MARKETING EVENTS
+// ----------------------
+model marketingEvents {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  title          String
+  description    String?
+  platforms      PlatformType[] @default([WEB, MOBILE])
+  showOnHomepage Boolean        @default(false)
+  startDate      DateTime
+  endDate        DateTime
+  status         EventStatus    @default(ACTIVE)
+  pointsUsed     Int            @default(0)
+  type           EventType
+
+  agencyId String? @db.ObjectId
+  adminId  String? @db.ObjectId
+
+  agency        agencies?            @relation(fields: [agencyId], references: [id])
+  admin         admins?              @relation(fields: [adminId], references: [id])
+  images        eventImages[]
+  transactions  creditTransactions[]
+  propertyLinks eventPropertyLink[] // explicit M2M
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+// Explicit M2M join between marketingEvents and properties
+model eventPropertyLink {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  eventId    String @db.ObjectId
+  propertyId String @db.ObjectId
+
+  marketingEvent marketingEvents @relation(fields: [eventId], references: [id])
+  property       properties      @relation(fields: [propertyId], references: [id])
+}
+
+// ----------------------
+// IMAGES
+// ----------------------
+model eventImages {
+  id       String           @id @default(auto()) @map("_id") @db.ObjectId
+  fileId   String
+  url      String
+  eventId  String?          @db.ObjectId
+  event    marketingEvents? @relation(fields: [eventId], references: [id])
+  platform PlatformType?
+
+  createdAt DateTime @default(now())
+}
+
+// ----------------------
+// PROPERTY BOOSTS
+// ----------------------
+model propertyBoosts {
+  id            String      @id @default(auto()) @map("_id") @db.ObjectId
+  agencyId      String      @db.ObjectId
+  propertyId    String      @db.ObjectId
+  tier          BoostTier
+  creditsSpent  Int         @default(0)
+  startTime     DateTime    @default(now())
+  endTime       DateTime
+  status        BoostStatus @default(PENDING)
+  priorityScore Int
+
+  agency             agencies             @relation(fields: [agencyId], references: [id])
+  property           properties           @relation(fields: [propertyId], references: [id])
+  createdAt          DateTime             @default(now())
+  creditTransactions creditTransactions[]
+}
+
+// ----------------------
+// AGENCY CREDITS
+// ----------------------
+model agencyCredits {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  agencyId    String   @unique @db.ObjectId
+  balance     Int      @default(0)
+  lastUpdated DateTime @default(now())
+
+  agency       agencies             @relation(fields: [agencyId], references: [id])
+  transactions creditTransactions[]
+  createdAt    DateTime             @default(now())
+}
+
+model creditTransactions {
+  id            String     @id @default(auto()) @map("_id") @db.ObjectId
+  agencyId      String     @db.ObjectId
+  type          CreditType
+  amount        Float
+  balanceBefore Float
+  balanceAfter  Float
+  reference     String?
+  purpose       String?
+  note          String?
+  eventId       String?    @db.ObjectId
+  boostId       String?    @db.ObjectId
+  promotionId   String?    @db.ObjectId
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency          agencies         @relation(fields: [agencyId], references: [id])
+  marketingEvent  marketingEvents? @relation(fields: [eventId], references: [id])
+  propertyBoost   propertyBoosts?  @relation(fields: [boostId], references: [id])
+  promotion       promotions?      @relation(fields: [promotionId], references: [id])
+  agencyCredits   agencyCredits?   @relation(fields: [agencyCreditsId], references: [id])
+  agencyCreditsId String?          @db.ObjectId
+}
+
+model creditSettings {
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  action        String // e.g. "BOOST_PROPERTY", "SEARCH_PROPERTY", "POST_PROPERTY"
+  tier          String? // e.g. "BRONZE", "SILVER", "GOLD" or "BASIC", "PREMIUM"
+  cost          Int // number of credits to deduct
+  currencyValue Float?  @default(0) // optional: real money equivalent (e.g., 10 credits = 1 USD)
+  description   String?
+  isActive      Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+// ----------------------
+// ADMINS, ROLES & PERMISSIONS
+// ----------------------
+model admins {
+  id        String      @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  email     String      @unique
+  password  String
+  status    AdminStatus @default(PENDING)
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime?   @updatedAt
+
+  roleLinks adminRoleLink[]
+  logs      adminActivityLogs[]
+  events    marketingEvents[]
+}
+
+// explicit join: Admin ↔ Role
+model adminRoleLink {
+  id      String     @id @default(auto()) @map("_id") @db.ObjectId
+  adminId String     @db.ObjectId
+  roleId  String     @db.ObjectId
+  admin   admins     @relation(fields: [adminId], references: [id])
+  role    adminRoles @relation(fields: [roleId], references: [id])
+}
+
+model adminRoles {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  name            String               @unique
+  description     String?
+  permissionLinks rolePermissionLink[]
+  roleLinks       adminRoleLink[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime?            @updatedAt
+}
+
+model adminPermissions {
+  id              String               @id @default(auto()) @map("_id") @db.ObjectId
+  code            String               @unique
+  description     String?
+  permissionLinks rolePermissionLink[]
+}
+
+// explicit join: Role ↔ Permission
+model rolePermissionLink {
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  roleId       String           @db.ObjectId
+  permissionId String           @db.ObjectId
+  role         adminRoles       @relation(fields: [roleId], references: [id])
+  permission   adminPermissions @relation(fields: [permissionId], references: [id])
+}
+
+// ----------------------
+// ADMIN LOGS
+// ----------------------
+model adminActivityLogs {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  adminId     String   @db.ObjectId
+  action      String
+  targetId    String?
+  targetType  String?
+  description String?
+  createdAt   DateTime @default(now())
+
+  admin admins @relation(fields: [adminId], references: [id])
+}
+
+model propertyTransactions {
+  id         String           @id @default(auto()) @map("_id") @db.ObjectId
+  type       PropertyCategory @default(RENT)
+  userId     String           @db.ObjectId
+  propertyId String           @db.ObjectId
+  agencyId   String           @db.ObjectId
+  startDate  DateTime?
+  endDate    DateTime?
+  amount     Float?
+  paymentRef String?
+  status     OrderStatus      @default(PENDING)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime?        @updatedAt
+
+  user     users      @relation(fields: [userId], references: [id])
+  property properties @relation(fields: [propertyId], references: [id])
+  agency   agencies   @relation(fields: [agencyId], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+  FAILED
+  REFUNDED
+}
+
+model propertyMonitors {
+  id            String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String            @db.ObjectId
+  name          String? // optional friendly name
+  location      String?
+  minPrice      Float?
+  maxPrice      Float?
+  bedrooms      Int?
+  bathrooms     Int?
+  propertyType  String?
+  category      PropertyCategory? // RENT, SALE, etc.
+  frequency     NotifyFrequency   @default(IMMEDIATE) // IMMEDIATE / DAILY / WEEKLY
+  isActive      Boolean           @default(true)
+  lastCheckedAt DateTime? // used by cron to only fetch new properties
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  user users @relation(fields: [userId], references: [id])
+}
+
+model nonitorNotifications {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  title     String
+  message   String
+  data      Json?
+  channel   String // EMAIL | PUSH | IN_APP | SMS
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model monitorSentHistory {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  monitorId  String   @db.ObjectId
+  propertyId String   @db.ObjectId
+  sentAt     DateTime @default(now())
+
+  @@index([monitorId, propertyId])
+}
+
+enum NotifyFrequency {
+  IMMEDIATE
+  DAILY
+  WEEKLY
+}
