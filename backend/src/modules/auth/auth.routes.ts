@@ -5,13 +5,12 @@ import { isAdmin, isAgent } from "../../middleware/authorizeRoles";
 
 const authRoutes: Router = express.Router();
 
-authRoutes.get("/get-all-amenities", authCtrl.getAllAmenities);
 authRoutes.post("/user-registration", authCtrl.userRegistration);
 authRoutes.post("/verify-user", authCtrl.verifyUser);
 authRoutes.post("/login-user", authCtrl.loginUser);
 authRoutes.get("/logout-user", isAuthenticated, authCtrl.logOutUser);
 authRoutes.post("/refresh-token", authCtrl.refreshToken);
-authRoutes.get("/lPYHH;DIUFY6ogged-in-user", isAuthenticated, authCtrl.getUser);
+authRoutes.get("/logged-in-user", isAuthenticated, authCtrl.getUser);
 authRoutes.post("/forgot-password-user", authCtrl.userForgotPassword);
 authRoutes.post("/reset-password-user", authCtrl.resetUserPassword);
 authRoutes.post("/verify-forgot-password-user", authCtrl.verifyUserForgotPassword);

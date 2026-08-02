@@ -1,5 +1,8 @@
-import * as crypto from 'crypto';
+import * as crypto from "crypto";
 
 export const generateKey = (prefix: string) => {
-  return `${prefix}_${crypto.randomBytes(24).toString('hex')}`;
+  return `${prefix}_${crypto.randomBytes(24).toString("hex")}`;
+};
+export const generateToken = () => {
+  return crypto.randomBytes(32).toString("hex");
 };

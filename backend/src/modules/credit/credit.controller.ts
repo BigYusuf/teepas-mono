@@ -14,7 +14,7 @@ export const initiateFunding = async (
   try {
     const { amount } = req.body;
 
-    const agency = req.agent?.agency;
+    const agency = req?.agency;
     if (!agency) return next(new ValidationError("Agency not found"));
 
     const paystackSecretKey =
@@ -162,7 +162,7 @@ export const getAgencyBalance = async (
   next: NextFunction,
 ) => {
   try {
-    const agencyId = req.agent?.agency.id;
+    const agencyId = req?.agency.id;
     const agencyCredit = await prisma.agencyCredits.findUnique({
       where: { agencyId },
     });
@@ -191,7 +191,7 @@ export const getCreditTransactions = async (
   next: NextFunction,
 ) => {
   try {
-    const agencyId = req.agent?.agency.id;
+    const agencyId = req?.agency.id;
 
     const transactions = await prisma.creditTransactions.findMany({
       where: { agencyId },

@@ -4,7 +4,7 @@ export const preProcessData = (userActions: any, properties: any) => {
   userActions.forEach((action: any) => {
     interactions.push({
       userId: action.userId,
-      productId: action.productId,
+      propertyId: action.propertyId,
       actionType: action.actionType,
     });
   });

@@ -48,18 +48,18 @@ export const getRecommendedProperties = async (
           recommendations.includes(product.id),
         );
       } else {
-        const recommendedProductIds = await recommendProperties(
+        const recommendedPropertyIds = await recommendProperties(
           userId,
           properties,
         );
         recommendedProperties = properties.filter((product: any) =>
-          recommendedProductIds.includes(product.id),
+          recommendedPropertyIds.includes(product.id),
         );
 
         await prisma.userAnalytics.update({
           where: { userId },
           data: {
-            recommendations: recommendedProductIds,
+            recommendations: recommendedPropertyIds,
             lastTrained: now,
           },
         });

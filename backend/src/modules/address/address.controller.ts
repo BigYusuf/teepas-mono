@@ -6,33 +6,18 @@ import { markTaskCompleted } from "../../middleware/markTask";
 /** AGENCY */
 // create agency address
 export const createAgencyAddress = async (
-  req: Request,
+  req: any,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const {
-      agencyId,
-      label,
-      name,
-      street,
-      city,
-      state,
-      zip,
-      country,
-      isDefault,
-    } = req.body;
+    const agentId = req.agent.id;
+    const agencyId = req.agency.id;
 
-    if (
-      !agencyId ||
-      !label ||
-      !name ||
-      !street ||
-      !city ||
-      !zip ||
-      !country ||
-      !state
-    ) {
+    const { label, name, street, city, state, zip, country, isDefault } =
+      req.body;
+
+    if (!label || !name || !street || !city || !zip || !country || !state) {
       return next(new ValidationError("All fields are required!"));
     }
 
@@ -63,7 +48,7 @@ export const createAgencyAddress = async (
       },
     });
 
-    // await markTaskCompleted(agency.ownerId, "agency-address");
+    await markTaskCompleted({ agentId, agencyId }, "ADD_AGENCY_ADDRESS");
 
     res.status(201).json({
       success: true,
@@ -222,7 +207,6 @@ export const setDefaultAgencyAddress = async (
     next(error);
   }
 };
-
 
 /** USERS */
 // add new address

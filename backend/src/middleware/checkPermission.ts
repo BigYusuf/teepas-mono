@@ -1,36 +1,42 @@
 import { Response, NextFunction } from "express";
 import prisma from "../libs/prisma";
 
-export const checkPermission = (permissionName: string) => {
+export const checkPermission = (permissionKey: string) => {
   return async (req: any, res: Response, next: NextFunction) => {
     try {
-      const agentId = req.agent?.id; // set by your auth middleware
-      if (!agentId) {
+      const agentId = req.agent?.id;
+      const agencyId = req.agency?.id; // agency id
+
+      if (!agentId || !agencyId) {
         return res.status(401).json({ status: false, message: "Unauthorized" });
       }
 
-      // Fetch agent with role and nested permissions
-      const agent = await prisma.agents.findUnique({
-        where: { id: agentId },
+      // Find the agent's active membership in the current agency
+      const membership = await prisma.agencyMembership.findFirst({
+        where: {
+          agentId,
+          agencyId,
+          status: "ACTIVE",
+        },
         include: {
           role: {
             include: {
               permissions: {
-                include: { permission: true }, // <-- important!
+                include: { permission: true },
               },
             },
           },
         },
       });
 
-      if (!agent || !agent.role) {
+      if (!membership || !membership.role) {
         return res.status(403).json({ status: false, message: "Forbidden" });
       }
 
-      // Check if the role has the required permission
-      const hasPermission = agent.role.permissions?.some(
-        (rp: { permission: { name: string } }) =>
-          rp.permission?.name === permissionName,
+      // Check if the role has the required permission by key
+      const hasPermission = membership.role.permissions.some(
+        (rp: { permission: { key: string } }) =>
+          rp.permission?.key === permissionKey,
       );
 
       if (!hasPermission) {

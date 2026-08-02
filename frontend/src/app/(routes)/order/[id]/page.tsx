@@ -218,7 +218,7 @@ const Page = () => {
         <div className="space-y-4">
           {order.items.map((item: any) => (
             <div
-              key={item.productId}
+              key={item.propertyId}
               className="border border-gray-200 rounded-md p-4 flex items-center gap-4"
             >
               <img

@@ -1,10 +1,8 @@
-import redis from "../../libs/redis";
+import prisma from "../../libs/prisma";
 import { Server as HttpServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 
-// const producer = kafka.producer();
 const connectedUsers: Map<string, WebSocket> = new Map();
-const unseenCounts: Map<string, number> = new Map();
 
 type IncomingMessage = {
   type?: string;
@@ -18,44 +16,64 @@ type IncomingMessage = {
 export async function createWebSocketServer(server: HttpServer) {
   const wss = new WebSocketServer({ server });
 
-  // await producer.connect();
-  console.log("Kafka producer connected!");
-
   wss.on("connection", (ws: WebSocket) => {
-    console.log("New Websocket connection!");
+    console.log("New WebSocket connection!");
 
     let registeredUserId: string | null = null;
+    let heartbeatInterval: NodeJS.Timeout | null = null;
 
     ws.on("message", async (rawMessage) => {
       try {
         const messageStr = rawMessage.toString();
 
-        // Register the user on first plain message (non-JSON)
+        // Register user on first plain (non-JSON) message
         if (!registeredUserId && !messageStr.startsWith("{")) {
-          registeredUserId = messageStr;
+          registeredUserId = messageStr.trim();
           connectedUsers.set(registeredUserId, ws);
-          console.log(`registered websocker for userId: ${registeredUserId}`);
+          console.log(`Registered WebSocket for: ${registeredUserId}`);
 
           const isAgent = registeredUserId.startsWith("agent_");
-          const redisKey = isAgent
-            ? `online:agent:${registeredUserId.replace("agent_", "")}`
-            : `online:user:${registeredUserId}`;
-          await redis.set(redisKey, "1");
-          await redis.expire(redisKey, 300);
+          const rawId = isAgent
+            ? registeredUserId.replace("agent_", "")
+            : registeredUserId.replace("user_", "");
+
+          // Mark all their participant rows as online
+          await prisma.participants.updateMany({
+            where: isAgent ? { agentId: rawId } : { userId: rawId },
+            data: { isOnline: true },
+          });
+
+          // Heartbeat: keep isOnline fresh every 2 minutes
+          heartbeatInterval = setInterval(async () => {
+            await prisma.participants.updateMany({
+              where: isAgent ? { agentId: rawId } : { userId: rawId },
+              data: { isOnline: true },
+            });
+          }, 120_000);
+
           return;
         }
 
-        // process JSON message
         const data: IncomingMessage = JSON.parse(messageStr);
 
-        // if it's seen update
+        // Handle MARK_AS_SEEN
         if (data.type === "MARK_AS_SEEN" && registeredUserId) {
-          const seenKey = `${registeredUserId}_${data.conversationId}`;
-          unseenCounts.set(seenKey, 0);
+          const isAgent = registeredUserId.startsWith("agent_");
+          const rawId = isAgent
+            ? registeredUserId.replace("agent_", "")
+            : registeredUserId.replace("user_", "");
+
+          await prisma.participants.updateMany({
+            where: {
+              conversationId: data.conversationId,
+              ...(isAgent ? { agentId: rawId } : { userId: rawId }),
+            },
+            data: { unreadCount: 0, lastSeenAt: new Date() },
+          });
           return;
         }
 
-        // regular message
+        // Regular message
         const {
           fromUserId,
           toUserId,
@@ -64,93 +82,118 @@ export async function createWebSocketServer(server: HttpServer) {
           senderType,
         } = data;
 
-        if (!data || !toUserId || !messageBody || !conversationId) {
+        if (!toUserId || !messageBody || !conversationId) {
           console.warn("Invalid message format:", data);
           return;
         }
 
-        const now = new Date().toISOString();
+        const now = new Date();
+
+        // Persist message to DB
+        const savedMessage = await prisma.message.create({
+          data: {
+            conversationId,
+            senderId: fromUserId,
+            senderType,
+            content: messageBody,
+            createdAt: now,
+          },
+        });
+
+        // Bump conversation updatedAt so lists stay sorted
+        await prisma.conversationGroup.update({
+          where: { id: conversationId },
+          data: { updatedAt: now },
+        });
+
+        // Increment receiver's unreadCount in participants
+        const isReceiverAgent = senderType === "user";
+        await prisma.participants.updateMany({
+          where: {
+            conversationId,
+            ...(isReceiverAgent ? { agentId: toUserId } : { userId: toUserId }),
+          },
+          data: { unreadCount: { increment: 1 } },
+        });
+
+        // Fetch updated unread count to send in the event
+        const receiverParticipant = await prisma.participants.findFirst({
+          where: {
+            conversationId,
+            ...(isReceiverAgent ? { agentId: toUserId } : { userId: toUserId }),
+          },
+          select: { unreadCount: true },
+        });
 
         const messagePayload = {
+          id: savedMessage.id,
           conversationId,
           senderId: fromUserId,
           senderType,
           content: messageBody,
-          createdAt: now,
+          createdAt: now.toISOString(),
         };
 
         const messageEvent = JSON.stringify({
           type: "NEW_MESSAGE",
           payload: messagePayload,
         });
-        const receiverKey =
-          senderType === "user" ? `agent_${toUserId}` : `user_${toUserId}`;
+
+        const receiverKey = isReceiverAgent
+          ? `agent_${toUserId}`
+          : `user_${toUserId}`;
         const senderKey =
           senderType === "user" ? `user_${fromUserId}` : `agent_${fromUserId}`;
 
-        // Update unseen count dynamically
-        const unseenKey = `${receiverKey}_${conversationId}`;
-        const prevCount = unseenCounts.get(unseenKey) || 0;
-        unseenCounts.set(unseenKey, prevCount + 1);
-
-        // send new message to receiver
+        // Deliver to receiver
         const receiverSocket = connectedUsers.get(receiverKey);
         if (receiverSocket && receiverSocket.readyState === WebSocket.OPEN) {
           receiverSocket.send(messageEvent);
-
-          // also notify unseen count
           receiverSocket.send(
             JSON.stringify({
               type: "UNSEEN_COUNT_UPDATE",
               payload: {
                 conversationId,
-                count: prevCount + 1,
+                count: receiverParticipant?.unreadCount ?? 1,
               },
             }),
           );
-
-          console.log(`Delivered message + unseen count to ${receiverKey}`);
+          console.log(`Delivered to ${receiverKey}`);
         } else {
-          console.log(`User ${receiverKey} is offline. Message queued.`);
+          console.log(`${receiverKey} is offline. Message persisted to DB.`);
         }
 
-        // echo to sender
+        // Echo to sender
         const senderSocket = connectedUsers.get(senderKey);
         if (senderSocket && senderSocket.readyState === WebSocket.OPEN) {
           senderSocket.send(messageEvent);
-          console.log(`Echoed message to sender ${senderKey}`);
+          console.log(`Echoed to sender ${senderKey}`);
         }
-
-        // push to kafka consumer
-        // await producer.send({
-        //   topic: "chat-new-message",
-        //   messages: [
-        //     {
-        //       key: conversationId,
-        //       value: JSON.stringify(messagePayload),
-        //     },
-        //   ],
-        // });
-
-        console.log(`message queued to kafka: ${conversationId}`);
       } catch (error) {
         console.error("Error processing WebSocket message:", error);
       }
     });
 
     ws.on("close", async () => {
+      if (heartbeatInterval) clearInterval(heartbeatInterval);
+
       if (registeredUserId) {
         connectedUsers.delete(registeredUserId);
-        console.log(`Disconnected user ${registeredUserId}`);
+        console.log(`Disconnected: ${registeredUserId}`);
+
         const isAgent = registeredUserId.startsWith("agent_");
-        const redisKey = isAgent
-          ? `online:agent:${registeredUserId.replace("agent_", "")}`
-          : `online:user:${registeredUserId}`;
-        await redis.del(redisKey);
+        const rawId = isAgent
+          ? registeredUserId.replace("agent_", "")
+          : registeredUserId.replace("user_", "");
+
+        await prisma.participants.updateMany({
+          where: isAgent ? { agentId: rawId } : { userId: rawId },
+          data: { isOnline: false },
+        });
       }
     });
 
-    ws.on("error", (err: any) => {
+    ws.on("error", (err: Error) => {
       console.error("WebSocket error:", err);
     });
   });

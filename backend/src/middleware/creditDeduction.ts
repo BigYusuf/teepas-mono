@@ -1,7 +1,8 @@
-
 import { NextFunction, Response } from "express";
 import { ValidationError } from "../error-handler";
 import prisma from "../libs/prisma";
+import { PrismaClient, Prisma } from "@prisma/client";
+import { DefaultArgs } from "@prisma/client/runtime/library";
 
 /**
  * Deduct credits dynamically based on a DB-configured action.
@@ -10,24 +11,23 @@ import prisma from "../libs/prisma";
 export const deductCredits = (action: string, tier?: string) => {
   return async (req: any, res: Response, next: NextFunction) => {
     try {
-      const agencyId = req.agent?.agency?.id;
+      const agencyId = req?.agency?.id;
       if (!agencyId)
         return next(new ValidationError("Unauthorized or invalid agency."));
 
-      const setting = await prisma.creditSettings.findUnique({
+      const setting = await prisma.creditSettings.findFirst({
         where: {
-          action_tier: {
-            action,
-            tier: tier || "DEFAULT",
-          },
+          action,
+          tier: tier || "DEFAULT",
+          isActive: true,
         },
       });
 
-      if (!setting || !setting.isActive) {
+      if (!setting) {
         return next(
           new ValidationError(
-            "Credit setting for this action not found or inactive."
-          )
+            "Credit setting for this action not found or inactive.",
+          ),
         );
       }
 
@@ -93,18 +93,20 @@ interface DeductCreditsOptions {
 }
 
 // ✅ Deduct credits safely
-export const deductCreditsDynamic = async ({
-  agencyId,
-  action,
-  tier,
-}: DeductCreditsOptions) => {
+export const deductCreditsDynamic = async (
+  { agencyId, action, tier }: DeductCreditsOptions,
+  tx: Omit<
+    PrismaClient<Prisma.PrismaClientOptions, never, DefaultArgs>,
+    "$connect" | "$disconnect" | "$on" | "$transaction" | "$extends"
+  >,
+) => {
   const setting = await prisma.creditSettings.findFirst({
     where: { action, tier, isActive: true },
   });
 
   if (!setting) {
     throw new ValidationError(
-      `Credit setting not found for ${action}${tier ? ` (${tier})` : ""}`
+      `Credit setting not found for ${action}${tier ? ` (${tier})` : ""}`,
     );
   }
 
@@ -118,7 +120,7 @@ export const deductCreditsDynamic = async ({
     throw new ValidationError(
       `Insufficient credits. Required: ${cost}, Available: ${
         creditRecord?.balance || 0
-      }`
+      }`,
     );
   }
 
@@ -154,7 +156,7 @@ export const refundCredits = async (
   agencyId: string,
   cost: number,
   action: string,
-  tier?: string
+  tier?: string,
 ) => {
   const creditRecord = await prisma.agencyCredits.findUnique({
     where: { agencyId },

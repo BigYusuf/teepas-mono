@@ -1,4 +1,8 @@
 import app from "./app";
+import { seedAmenities } from "./common/seed/initAmenitiesSeed";
+import { initializeSiteConfig } from "./common/seed/initializeSiteConfig";
+import { seedRolesAndPermissions } from "./common/seed/initRolesPermSeed";
+import { seedTasks } from "./common/seed/initTaskSeed";
 // import { corsCache } from "./common/service/cors.cache.service";
 // import { RedisPlanProviderService } from "./common/service/plan.provider.service";
 
@@ -9,16 +13,23 @@ import { config } from "./shared/configs/app.config";
 const startServer = async () => {
   try {
     const server = app.listen(config.PORT, async () => {
- 
       console.log(`🚀 API listening at ${config.PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+      try {
+        // await initializeSiteConfig();
+        // await seedRolesAndPermissions();
+        // await seedAmenities();
+        // await seedTasks();
+      } catch (error) {
+        console.error("❌ Failed to initialize seed service:", error);
+      }
       // try {
-        //running redis cache sercvices
-        // await RedisPlanProviderService.cachePlanProviders();
-        // await corsCache.warm();
-        // await corsCache.startAutoRefresh();
+      //running redis cache sercvices
+      // await RedisPlanProviderService.cachePlanProviders();
+      // await corsCache.warm();
+      // await corsCache.startAutoRefresh();
 
-        // console.log("✅ Redis Cache Warmed-up successfully!");
+      // console.log("✅ Redis Cache Warmed-up successfully!");
       // } catch (error) {
       //   console.error("❌ Failed to initialize redis warm service:", error);
       // }

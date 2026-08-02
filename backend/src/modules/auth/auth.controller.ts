@@ -1,8 +1,8 @@
 import { NextFunction, Request, Response } from "express";
 
 import bcrypt from "bcryptjs";
-import jwt, { JsonWebTokenError } from "jsonwebtoken";
-import { AuthError, NotFoundError, ValidationError } from "../../error-handler";
+import jwt from "jsonwebtoken";
+import { AuthError, ValidationError } from "../../error-handler";
 import prisma from "../../libs/prisma";
 import {
   checkOtpRestrictions,
@@ -13,8 +13,8 @@ import {
   verifyForgotPasswordOtp,
   verifyOtp,
 } from "../../utils/auth.helper";
-import { setCookie } from "../../utils/cookies/setCookie";
 import { markTaskCompleted } from "../../middleware/markTask";
+import { issueAuthTokens } from "./auth.services";
 // import { sendNotifyEmail } from "../services/notification";
 
 // Register a new user
@@ -132,29 +132,14 @@ export const loginUser = async (
     //   source: "auth-service",
     // });
 
-    res.clearCookie("agent-access-token");
-    res.clearCookie("agent-refresh-token");
-
-    // Generate access and refresh token
-    const accessToken = jwt.sign(
-      { id: user.id, role: "user" },
-      process.env.ACCESS_TOKEN_SECRET as string,
+    const tokens = issueAuthTokens(
+      res,
       {
-        expiresIn: "1h",
+        id: user.id,
+        role: "user",
       },
+      req.body.isMobile,
     );
-
-    const refreshToken = jwt.sign(
-      { id: user.id, role: "user" },
-      process.env.REFRESH_TOKEN_SECRET as string,
-      {
-        expiresIn: "7d",
-      },
-    );
-
-    // store the refresh and access token in an httpOnly secure cookie
-    setCookie(res, "refresh_token", refreshToken);
-    setCookie(res, "access_token", accessToken);
 
     res.status(200).json({
       message: "Login successful!",
@@ -164,8 +149,7 @@ export const loginUser = async (
         name: user.name,
         // avatar: user?.imageUrl || null,
       },
-      accessToken: isMobile ? accessToken : undefined,
-      refreshToken: isMobile ? refreshToken : undefined,
+      ...tokens,
     });
   } catch (error) {
     return next(error);
@@ -276,34 +260,18 @@ export const loginAdmin = async (
     //   message: `Admin login successful: ${email}`,
     //   source: "auth-service",
     // });
-
-    res.clearCookie("agent-access-token");
-    res.clearCookie("agent-refresh-token");
-
-    // Generate access and refresh token
-    const accessToken = jwt.sign(
-      { id: user.id, role: "admin" },
-      process.env.ACCESS_TOKEN_SECRET as string,
+    const tokens = issueAuthTokens(
+      res,
       {
-        expiresIn: "1h",
+        id: user.id,
+        role: "admin",
       },
+      req.body.isMobile,
     );
-
-    const refreshToken = jwt.sign(
-      { id: user.id, role: "admin" },
-      process.env.REFRESH_TOKEN_SECRET as string,
-      {
-        expiresIn: "7d",
-      },
-    );
-
-    // store the refresh and access token in an httpOnly secure cookie
-    setCookie(res, "refresh_token", refreshToken);
-    setCookie(res, "access_token", accessToken);
-
     res.status(200).json({
       message: "Login successful!",
-      user: { id: user.id, email: user.email, name: user.name },
+      data: { id: user.id, email: user.email, name: user.name },
+      ...tokens,
     });
   } catch (error) {
     return next(error);
@@ -317,53 +285,73 @@ export const refreshToken = async (
   next: NextFunction,
 ) => {
   try {
-    const refreshToken =
+    const token =
       req.cookies["refresh_token"] ||
       req.cookies["agent-refresh-token"] ||
       req.headers.authorization?.split(" ")[1];
 
-    if (!refreshToken) {
+    if (!token) {
       return next(new ValidationError("Unauthorized! No refresh token."));
     }
 
     const decoded = jwt.verify(
-      refreshToken,
+      token,
       process.env.REFRESH_TOKEN_SECRET as string,
-    ) as { id: string; role: string };
-
-    if (!decoded || !decoded.id || !decoded.role) {
-      return next(new JsonWebTokenError("Forbidden! Invalid refresh token."));
-    }
+    ) as {
+      id: string;
+      role: "user" | "agent" | "admin";
+      agencyId?: string | null;
+      membershipId?: string | null;
+    };
 
     let account;
+
     if (decoded.role === "user" || decoded.role === "admin") {
-      account = await prisma.users.findUnique({ where: { id: decoded.id } });
-    } else if (decoded.role === "agent") {
-      account = await prisma.agents.findUnique({
-        where: { id: decoded.id },
-        include: { memberships: true },
+      account = await prisma.users.findUnique({
+        where: {
+          id: decoded.id,
+        },
       });
+    } else {
+      account = await prisma.agents.findUnique({
+        where: {
+          id: decoded.id,
+        },
+      });
+      const membership = await prisma.agencyMembership.findFirst({
+        where: {
+          id: decoded.membershipId as string,
+          agencyId: decoded.agencyId as string,
+          agentId: decoded.id as string,
+        },
+      });
+
+      if (decoded.membershipId && decoded.agencyId && !membership) {
+        return next(new AuthError("Invalid membership."));
+      }
     }
 
     if (!account) {
-      return next(new AuthError("Forbidden! User/Agent not found"));
+      return next(new AuthError("Forbidden! Account not found."));
     }
 
-    const newAccessToken = jwt.sign(
-      { id: decoded.id, role: decoded.role },
-      process.env.ACCESS_TOKEN_SECRET as string,
-      { expiresIn: "1h" },
+    const isMobile = Boolean(req.headers.authorization?.startsWith("Bearer "));
+
+    const tokens = issueAuthTokens(
+      res,
+      {
+        id: decoded.id,
+        role: decoded.role,
+        agencyId: decoded.agencyId ?? null,
+        membershipId: decoded.membershipId ?? null,
+      },
+      isMobile,
     );
 
-    if (decoded.role === "user" || decoded.role === "admin") {
-      setCookie(res, "access_token", newAccessToken);
-    } else if (decoded.role === "agent") {
-      setCookie(res, "agent-access-token", newAccessToken);
-    }
-
-    req.role = decoded.role;
-
-    return res.status(201).json({ success: true });
+    return res.status(200).json({
+      success: true,
+      ...tokens,
+    });
   } catch (error) {
     next(error);
   }
@@ -543,9 +531,27 @@ export const verifyAgent = async (
       skipDuplicates: true, // avoids duplicates if seeding again
     });
 
-    res
-      .status(201)
-      .json({ data: agent, message: "Agent registered successfully!" });
+    const tokens = issueAuthTokens(
+      res,
+      {
+        id: agent.id,
+        role: "agent",
+        agencyId: null,
+        membershipId: null,
+      },
+      req.body.isMobile,
+    );
+
+    await markTaskCompleted(
+      { agentId: agent.id, agencyId: undefined },
+      "VERIFY_ACCOUNT",
+    );
+
+    res.status(201).json({
+      message: "Agent registered successfully!",
+      data: agent,
+      ...tokens,
+    });
   } catch (error) {
     next(error);
   }
@@ -553,21 +559,17 @@ export const verifyAgent = async (
 
 // 🏦 Create Agency Bank Account
 export const createAgencyBankAccount = async (
-  req: Request,
+  req: any,
   res: Response,
   next: NextFunction,
 ) => {
   try {
-    const {
-      agencyId,
-      bankName,
-      accountName,
-      accountNumber,
-      currency,
-      isPrimary,
-    } = req.body;
+    const { bankName, accountName, accountNumber, currency, isPrimary } =
+      req.body;
+    const agencyId = req.agency.id ?? undefined;
+    const agentId = req.agent.id ?? undefined;
 
-    if (!agencyId || !bankName || !accountName || !accountNumber) {
+    if (!bankName || !accountName || !accountNumber) {
       return next(new ValidationError("All required fields must be provided!"));
     }
 
@@ -596,98 +598,12 @@ export const createAgencyBankAccount = async (
     });
 
     // ✅ Auto-complete task
-    // await markTaskCompleted(agency?.ownerId, "agency-banks");
+    await markTaskCompleted({ agentId, agencyId }, "ADD_BANK_ACCOUNT");
+
     res.status(201).json({
       success: true,
       bankAccount,
     });
-  } catch (error) {
-    next(error);
-  }
-};
-
-// create stripe connect account link
-// export const createStripeConnectLink = async (
-//   req: Request,
-//   res: Response,
-//   next: NextFunction
-// ) => {
-//   try {
-//     const { agentId } = req.body;
-
-//     if (!agentId) return next(new ValidationError("Agent ID is required!"));
-
-//     const agent = await prisma.agents.findUnique({
-//       where: {
-//         id: agentId,
-//       },
-//     });
-
-//     if (!agent) {
-//       return next(new ValidationError("Agent is not available with this id!"));
-//     }
-
-//     const account = await stripe.accounts.create({
-//       type: "express",
-//       email: agent?.email,
-//       country: "GB",
-//       capabilities: {
-//         card_payments: { requested: true },
-//         transfers: { requested: true },
-//       },
-//     });
-
-//     await prisma.agents.update({
-//       where: {
-//         id: agentId,
-//       },
-//       data: {
-//         stripeId: account.id,
-//       },
-//     });
-
-//     const accountLink = await stripe.accountLinks.create({
-//       account: account.id,
-//       refresh_url: `http://localhost:3000/success`,
-//       return_url: `http://localhost:3000/success`,
-//       type: "account_onboarding",
-//     });
-
-//     res.json({ url: accountLink.url });
-//   } catch (error) {
-//     return next(error);
-//   }
-// };
-export const getAllAmenities = async (
-  req: Request,
-  res: Response,
-  next: NextFunction,
-) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 50;
-    const skip = (page - 1) * limit;
-
-    // const [amenities, totalAmenities] = await Promise.all([
-    //   prisma.amenities.findMany({
-    //     skip,
-    //     take: limit,
-    //     orderBy: { category: "asc" },
-    //   }),
-    //   prisma.amenities.count(),
-    // ]);
-
-    // const totalPages = Math.ceil(totalAmenities / limit);
-
-    // res.status(200).json({
-    //   success: true,
-    //   data: amenities,
-    //   meta: {
-    //     totalAmenities,
-    //     currentPage: page,
-    //     totalPages,
-    //   },
-    // });
   } catch (error) {
     next(error);
   }
@@ -714,6 +630,8 @@ export const loginAgent = async (
         password: true,
         memberships: {
           select: {
+            id: true,
+            agencyId: true,
             agency: { select: { name: true, id: true } },
             role: {
               select: { name: true, id: true, description: true, key: true },
@@ -730,25 +648,18 @@ export const loginAgent = async (
     if (!isMatch)
       return next(new ValidationError("Invalid email or password!"));
 
-    res.clearCookie("access_token");
-    res.clearCookie("refresh_token");
+    const membership = agent.memberships[0];
 
-    // Generate access and refresh tokens
-    const accessToken = jwt.sign(
-      { id: agent.id, role: "agent" },
-      process.env.ACCESS_TOKEN_SECRET as string,
-      { expiresIn: "1h" },
+    const tokens = issueAuthTokens(
+      res,
+      {
+        id: agent.id,
+        role: "agent",
+        agencyId: membership?.agency.id ?? null,
+        membershipId: membership?.id ?? null,
+      },
+      isMobile,
     );
-    const refreshToken = jwt.sign(
-      { id: agent.id, role: "agent" },
-      process.env.REFRESH_TOKEN_SECRET as string,
-      { expiresIn: "7d" },
-    );
-
-    // store refresh token and access token
-    setCookie(res, "agent-refresh-token", refreshToken);
-    setCookie(res, "agent-access-token", accessToken);
-
     // send response
     res.status(200).json({
       message: "Login successful!",
@@ -759,8 +670,7 @@ export const loginAgent = async (
         memberships: agent.memberships || {},
       },
 
-      accessToken: isMobile ? accessToken : undefined,
-      refreshToken: isMobile ? refreshToken : undefined,
+      ...tokens,
     });
   } catch (error) {
     next(error);

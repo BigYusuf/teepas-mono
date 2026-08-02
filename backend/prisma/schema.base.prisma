@@ -5,21 +5,22 @@ generator client {
 }
 
 datasource db {
-  provider = "mongodb"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model images {
-  id         String      @id @default(auto()) @map("_id") @db.ObjectId
+  id         String      @id @default(uuid())
   fileId    String
   url        String
   users      users[]
+  agents    agents[] 
     createdAt     DateTime               @default(now())
   updatedAt     DateTime?               @updatedAt
 }
 
 model users {
-  id            String                 @id @default(auto()) @map("_id") @db.ObjectId
+  id            String                 @id @default(uuid())
   name          String
   email         String                 @unique
   role          String                 @default("user")
@@ -27,7 +28,7 @@ model users {
   following     String[]
   avatar        images?                @relation(fields: [imagesId], references: [id])
   agencyReviews agencyReviews[]
-  imagesId      String?                @db.ObjectId
+  imagesId      String?                
   followings    followers[]
   applications  propertyApplications[]
   propertyTransactions propertyTransactions[]
@@ -37,12 +38,12 @@ model users {
 }
 
 model agencyReviews {
-  id        String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String    @db.ObjectId
+  id        String    @id @default(uuid())
+  userId    String    
   user      users     @relation(fields: [userId], references: [id])
   rating    Float
   reviews   String?
-  agencyId  String?   @db.ObjectId
+  agencyId  String?   
   agencies  agencies? @relation(fields: [agencyId], references: [id])
 
   createdAt DateTime  @default(now())
@@ -50,8 +51,8 @@ model agencyReviews {
 }
 
 model agencyRoles {
-  id          String @id @default(auto()) @map("_id") @db.ObjectId
-  agencyId    String @db.ObjectId
+  id          String @id @default(uuid())
+  agencyId    String 
   name        String // Agent, Accountant, Lawyer, etc
   description String?
   createdAt DateTime @default(now())
@@ -64,23 +65,23 @@ model agencyRoles {
 }
 
 model agencyRolePermissions {
-  id           String @id @default(auto()) @map("_id") @db.ObjectId
-  roleId       String @db.ObjectId
-  permissionId String @db.ObjectId
+  id           String @id @default(uuid())
+  roleId       String 
+  permissionId String 
 
   role         agencyRoles @relation(fields: [roleId], references: [id])
   permission   permissions @relation(fields: [permissionId], references: [id])
 }
 
 model agencyMembership {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  id        String @id @default(uuid())
 
-  agencyId  String @db.ObjectId
-  agentId   String @db.ObjectId
-  roleId    String @db.ObjectId
+  agencyId  String 
+  agentId   String 
+  roleId    String 
 
   status    AgentStatus @default(ACTIVE)
-  invitedById String? @db.ObjectId
+  invitedById String? 
 
   joinedAt  DateTime @default(now())
   leftAt    DateTime?
@@ -93,15 +94,45 @@ model agencyMembership {
   role   roles @relation(fields: [roleId], references: [id])
 }
 
+model agencyJoinRequests {
+  id String @id @default(uuid())
+
+  agencyId String 
+  agentId  String 
+
+  message String?
+
+  status JoinRequestStatus @default(PENDING)
+
+  reviewedById String? 
+  reviewedAt   DateTime?
+
+  cancelledAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency agencies @relation(fields: [agencyId], references: [id])
+  agent  agents   @relation(fields: [agentId], references: [id])
+
+  @@unique([agencyId, agentId])
+}
+
+enum JoinRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
 model agencyInvites {
-  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  id        String @id @default(uuid())
   email     String
   token     String @unique
 
-  agencyId  String @db.ObjectId
-  roleId    String @db.ObjectId
+  agencyId  String 
+  roleId    String 
 
-  invitedById String @db.ObjectId
+  invitedById String 
 
   status    InviteStatus @default(PENDING)
 
@@ -116,15 +147,16 @@ model agencyInvites {
 enum InviteStatus {
   PENDING
   ACCEPTED
+  DECLINED
   EXPIRED
   REVOKED
 }
 
 model followers {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(uuid())
 
-  userId   String @db.ObjectId
-  agencyId String @db.ObjectId
+  userId   String 
+  agencyId String 
 
   user     users     @relation(fields: [userId], references: [id])
   agencies agencies? @relation(fields: [agencyId], references: [id])
@@ -133,59 +165,102 @@ model followers {
 }
 
 model agencies {
-  id                String @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(uuid())
 
-  name              String
-  bio               String?
-  category          String
+  name           String
+  bio            String?
+  category       String
+  operatingAreas String[]
 
-  operatingAreas    String[]
-  website           String?
-  email             String?
-  phone             String?
-  supportEmail      String?
-  openingHours      String?
+  verified  Boolean   @default(false)
+  isDeleted Boolean   @default(false)
+  deletedAt DateTime?
 
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  // 🔥 core relationship
+  memberships agencyMembership[]
+
+  // 1:1 splits — each owns its own task-completion concern
+  contact         agencyContact?
+  support         agencySupport?
+  businessDetails agencyBusinessDetails?
+  media           agencyMedia?
+
+  // everything else unchanged
+  followers   followers[]
+  reviews     agencyReviews[]
+  properties  properties[]
+  invites     agencyInvites[]
+  joinRequest agencyJoinRequests[]
+  addresses   agencyAddresses[]
+
+  documents    agencyDocuments?
+  bankAccounts agencyBankAccounts[]
+
+  agencyTaskProgress agencyTaskProgress[]
+}
+
+model agencyContact {
+  id       String  @id @default(uuid())
+  agencyId String  @unique
+  email    String?
+  phone    String?
+  website  String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency agencies @relation(fields: [agencyId], references: [id])
+}
+
+model agencySupport {
+  id           String  @id @default(uuid())
+  agencyId     String  @unique
+  supportEmail String?
+  supportPhone String?
+  openingHours String?   // moved here — "when can support reach you" fits better than agencyContact
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency agencies @relation(fields: [agencyId], references: [id])
+}
+
+model agencyBusinessDetails {
+  id                String   @id @default(uuid())
+  agencyId          String   @unique
   commissionRate    Float?
   servicesOffered   String[]
   yearEstablished   Int?
   businessRegNumber String?
   taxId             String?
 
-  verified          Boolean @default(false)
-  isDeleted         Boolean @default(false)
-  deletedAt         DateTime?
-
-  step              String @default("incomplete")
-  currentStep       Int @default(1)
-
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
+  agency agencies @relation(fields: [agencyId], references: [id])
+}
+
+model agencyMedia {
+  id          String  @id @default(uuid())
+  agencyId    String  @unique
   avatar      String?
   coverBanner String?
   logoUrl     String?
   videoIntro  String?
   socialLinks Json[]
 
-  // 🔥 core relationship
-  memberships agencyMembership[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
-  // everything else unchanged
-  followers followers[]
-  reviews agencyReviews[]
-  properties properties[]
-
-  invites agencyInvites[]
-  addresses agencyAddresses[]
-
-  documents agencyDocuments?
-  bankAccounts agencyBankAccounts[]
+  agency agencies @relation(fields: [agencyId], references: [id])
 }
 
 model agencyAddresses {
-  id        String           @id @default(auto()) @map("_id") @db.ObjectId
-  agencyId  String           @db.ObjectId
+  id        String           @id @default(uuid())
+  agencyId  String           
   label     agencyddressType // e.g. "HEAD_OFFICE" | "BRANCH" | "WAREHOUSE"
   name      String
   street    String
@@ -209,13 +284,16 @@ enum AgentStatus {
 }
 
 model agents {
-  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  id          String @id @default(uuid())
 
   name        String
   email       String @unique
   phoneNumber String
   country     String
   password    String
+
+  avatar    images? @relation(fields: [imagesId], references: [id])
+  imagesId  String?
 
   isDeleted   Boolean @default(false)
   deletedAt   DateTime?
@@ -225,8 +303,15 @@ model agents {
 
   memberships agencyMembership[]
 
+  joinRequest agencyJoinRequests[]
   properties properties[]
 }
+
+enum TaskTarget {
+  AGENT
+  AGENCY
+}
+
 enum TaskCategory {
   ONBOARDING
   PROFILE
@@ -241,38 +326,65 @@ enum TaskCategory {
 }
 
 model tasks {
-  id            String       @id @default(auto()) @map("_id") @db.ObjectId
-  name          String
-  description   String
-  category      TaskCategory
-  points        Int          @default(10)
-  rewardCredits Int          @default(0)
-  sortOrder     Int
-  isRequired    Boolean      @default(true)
-  isActive      Boolean      @default(true)
-  createdAt     DateTime     @default(now())
+  id String @id @default(uuid())
 
-  agentProgress agentTaskProgress[]
+  key         String       @unique   // ← stable slug, e.g. "CREATE_FIRST_PROPERTY"
+  name        String
+  description String
+  target   TaskTarget
+  category TaskCategory
+
+  points        Int @default(10)
+  rewardCredits Int @default(0)
+  sortOrder Int
+
+  isRequired Boolean @default(true)
+  isActive   Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agentProgress  agentTaskProgress[]
+  agencyProgress agencyTaskProgress[]
 }
 
+
 model agentTaskProgress {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  agentId     String   @db.ObjectId
-  taskId      String   @db.ObjectId
-  completed   Boolean  @default(false)
+  id String @id @default(uuid())
+
+  agentId String 
+  taskId  String 
+  completed   Boolean @default(false)
   completedAt DateTime?
-  createdAt   DateTime @default(now())
 
-  agent       agents   @relation(fields: [agentId], references: [id])
-  task        tasks    @relation(fields: [taskId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+  agent agents @relation(fields: [agentId], references: [id])
+  task  tasks  @relation(fields: [taskId], references: [id])
 
-  /// 🔥 Prevent duplicate agent-task assignments
   @@unique([agentId, taskId])
 }
 
+model agencyTaskProgress {
+  id String @id @default(uuid())
+
+  agencyId String 
+  taskId   String 
+  completed   Boolean @default(false)
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+  agency agencies @relation(fields: [agencyId], references: [id])
+  task   tasks    @relation(fields: [taskId], references: [id])
+
+  @@unique([agencyId, taskId])
+}
+
+
 model agencyDocuments {
-  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
-  agencyId            String    @unique @db.ObjectId
+  id                  String    @id @default(uuid())
+  agencyId            String    @unique 
   businessCertificate String? // CAC or business registration document
   proofOfAddress      String? // Utility bill / tenancy agreement
   ownerIdCard         String? // Government ID
@@ -287,8 +399,8 @@ model agencyDocuments {
 }
 
 model agencyBankAccounts {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  agencyId      String   @db.ObjectId
+  id            String   @id @default(uuid())
+  agencyId      String   
   bankName      String
   accountName   String
   accountNumber String
@@ -301,7 +413,7 @@ model agencyBankAccounts {
 }
 
 model roles {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  id          String        @id @default(uuid())
   key        String        @unique
   name        String        
   description String?
@@ -313,7 +425,7 @@ model roles {
 }
 
 model permissions {
-  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  id          String        @id @default(uuid())
   key        String        @unique
   name        String        
   description String?
@@ -322,161 +434,326 @@ model permissions {
 }
 
 model rolePermissions {
-  id            String       @id @default(auto()) @map("_id") @db.ObjectId
-  roleId        String       @db.ObjectId
-  permissionId  String       @db.ObjectId
+  id            String       @id @default(uuid())
+  roleId        String       
+  permissionId  String       
   role          roles        @relation(fields: [roleId], references: [id])
   permission    permissions  @relation(fields: [permissionId], references: [id])
 }
 
 model site_config {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  id            String   @id @default(uuid())
   categories    String[]
   subCategories Json
   logo          String?
   banner        String?
 }
-
-model promotions {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  public_name   String
-  discountType  String
-  discountValue Float
-  discountCode  String   @unique
-  agentId       String   @db.ObjectId
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime? @updatedAt
+enum DraftStatus {
+  IN_PROGRESS
+  READY
+  PUBLISHED
+  DISCARDED
 }
 
+model listingDrafts {
+  id String @id @default(uuid())
+
+  agencyId String
+  agentId  String
+
+  // If editing an existing live listing, link back to it. Null = brand new.
+  listingId String? @unique
+
+  // Whole form state as one flexible object. No per-field nullability
+  // gymnastics, no partial-upsert branching — it's just "whatever the
+  // agent has typed so far."
+  data Json
+
+  // For the multi-unit case: one draft can describe a whole complex plus
+  // an array of units, instead of forcing 6 separate wizard runs.
+  isMultiUnit Boolean @default(false)
+
+  status       DraftStatus @default(IN_PROGRESS)
+  lastSavedStep String?    // just a UI hint, not a gate — see below
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency agencies @relation(fields: [agencyId], references: [id])
+  agent  agents   @relation(fields: [agentId], references: [id])
+}
+
+enum DiscountType {
+  PERCENTAGE
+  FIXED
+}
+
+model promotions {
+  id          String  @id @default(uuid())
+  name        String
+  description String?
+
+  discountType  DiscountType
+  discountValue Float
+  discountCode  String       @unique
+
+  validFrom  DateTime?
+  validUntil DateTime?
+  usageLimit Int?
+  usageCount Int       @default(0)
+
+  isActive Boolean @default(true)
+
+  // Scope stays at the PROPERTY (asset) level — "applies to everything
+  // under this building." Listing-level promo scoping can be added later
+  // as an optional listingId if you need per-offer discounts.
+  agentId    String?
+  agencyId   String
+  propertyId String? // null = applies to all agency properties
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agent              agents?              @relation(fields: [agentId], references: [id])
+  agency             agencies             @relation(fields: [agencyId], references: [id])
+  property           properties?          @relation(fields: [propertyId], references: [id])
+  creditTransactions creditTransactions[]
+}
+
+model amenities {
+  id       String  @id @default(uuid())
+  name     String  @unique
+  category String
+  icon     String?
+  isActive Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  units propertyUnitAmenities[]
+}
+
+// Amenities now attach to the UNIT (persist across relistings), not the listing.
+model propertyUnitAmenities {
+  id     String @id @default(uuid())
+  unitId String
+  amenityId String
+
+  unit    propertyUnits @relation(fields: [unitId], references: [id])
+  amenity amenities     @relation(fields: [amenityId], references: [id])
+
+  @@unique([unitId, amenityId])
+}
+
+// ── ASSET ────────────────────────────────────────────────────────────────
+// The physical building/land/complex. Address, location, ownership — never
+// price or availability, since those live below on listings.
 model properties {
-  id            String           @id @default(auto()) @map("_id") @db.ObjectId
-  title         String
-  slug          String           @unique
-  description   String?
-  category      PropertyCategory?
-  type          PropertyType?
-  designType    DesignType?
-  purpose       PropertyPurpose?
-  economicClass EconomicClass?
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+
+  video_url String?
+  address   String?
+  city      String?
+  state     String?
+  country   String?
+  showTo    ShowAddress?
+
+  latitude  Float?
+  longitude Float?
+
+  tags String[]
+
+  isMultiUnit Boolean @default(false)
+
+  // Legal/ownership verification of the ASSET itself (e.g. title deed
+  // confirmed) — distinct from a listing being live/published, which is
+  // covered by listings.status instead.
+  verified   Boolean?  @default(false)
+  verifiedAt DateTime?
+  verifiedBy String?
+  isDeleted  Boolean?  @default(false)
+  deletedAt  DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agencyId String
+  agency   agencies @relation(fields: [agencyId], references: [id])
+  agentId  String?
+  agent    agents?  @relation(fields: [agentId], references: [id])
+
+  units propertyUnits[]
+
+  nearByLocation    propertyNearbyPlaces[]
+  documents         propertyDocuments[]
+  promotions        promotions[]
+  eventPropertyLink eventPropertyLink[]
+}
+
+// ── UNIT (physical space) ──────────────────────────────────────────────
+// One leasable/saleable space. Always exists — even a standalone house is
+// a property with exactly one unit. Physical characteristics live here,
+// stable across however many times the unit gets relisted.
+model propertyUnits {
+  id         String     @id @default(uuid())
+  propertyId String
+  property   properties @relation(fields: [propertyId], references: [id])
+
+  unitLabel String? // "Shop 3", "Flat 2B" — null for standalone (only) unit
+
+  category             PropertyCategory?
+  type                 PropertyType?
+  designType           DesignType?
+  purpose              PropertyPurpose?
+  economicClass        EconomicClass?
   customSpecifications Json?
   customFeatures       Json?
-
-  tags                 String[]
   furnishing           FurnishingStatus?
   sizeSqm              Float?
   landSizeSqm          Float?
   yearBuilt            Int?
   condition            ConditionStatus?
-  availableFrom        DateTime?
 
-  video_url            String?
-  address              String?
-  city                 String?
-  state                String?
-  country              String?
-  showTo               ShowAddress?
+  electricity      ElectricityType?
+  electricBilling  MeterType?
+  waterSupply      WaterSupplyType?
+  cooling          CoolingType?
+  heating          HeatingType?
+  construction     ConstructionStatus?
+  floorType        FloorType?
+  roofType         RoofType?
+  wallFinish       WallFinish?
+  ceilingType      CeilingType?
+  buildingMaterial BuildingMaterial?
 
-  // Location coordinates
-  coordinates             Json?
+  structureId String?            @unique
+  structure   PropertyStructure? @relation(fields: [structureId], references: [id])
 
-  // Property stats
-  ratings              Float? @default(0)
-  views                Int?   @default(0)
-  favorites            Int?   @default(0)
+  images    PropertyImages[]
+  videos    PropertyVideo[]
+  amenities propertyUnitAmenities[]
+  floorPlans floorPlan[]
 
-  // Structure — now related
-  structureId          String? @unique @db.ObjectId
-  structure            PropertyStructure? @relation(fields: [structureId], references: [id])
+  listings listings[]
 
-  // Utilities & materials
-  electricity          ElectricityType?
-  electricBilling      MeterType?
-  waterSupply          WaterSupplyType?
-  cooling              CoolingType?
-  heating              HeatingType?
-  construction         ConstructionStatus?
-  availability         AvailabilityStatus?
-  floorType            FloorType?
-  roofType             RoofType?
-  wallFinish           WallFinish?
-  ceilingType          CeilingType?
-  buildingMaterial     BuildingMaterial?
-  amenities            String[]
-  nearByLocation       String[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
 
-  // Status
-  status               ListingStatus @default(DRAFT)
-  progressStep         Int           @default(1) // 1–5 depending on step
-    isPublished     Boolean       @default(false)
-  verified             Boolean? @default(false)
-  verifiedAt           DateTime?
-  verifiedBy           String? @db.ObjectId
-  isDeleted            Boolean? @default(false)
-  deletedAt            DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime? @updatedAt
+// ── LISTING (the commercial offer) ───────────────────────────────────────
+// "This unit is for rent/sale, right now, at this price." A unit can have
+// many listings over its lifetime (relisted after each tenant leaves).
+// Everything that "happens" to an offer — leasing, buying, inspecting,
+// applying — points here.
+enum ListingPurpose {
+  RENT
+  SALE
+  LEASE
+  SHORT_LET
+}
 
-  // Relations
-  images               PropertyImages[]
-  documents            propertyDocuments[]
+enum ListingLifecycleStatus {
+  DRAFT
+  ACTIVE
+  PENDING
+  RENTED
+  SOLD
+  EXPIRED
+  ARCHIVED
+}
+
+model listings {
+  id String @id @default(uuid())
+
+  slug String @unique
+
+  unitId String
+  unit   propertyUnits @relation(fields: [unitId], references: [id])
+
+  purpose      ListingPurpose
+  status       ListingLifecycleStatus @default(DRAFT)
+  progressStep ListingStep            @default(BASIC_INFO)
+
+  availability  AvailabilityStatus?
+  availableFrom DateTime?
+
+  ratings   Float? @default(0)
+  views     Int?   @default(0)
+  favorites Int?   @default(0)
+
+  publishedAt DateTime?
+  expiredAt   DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
   pricing              propertyPricing?
-  floorPlans           floorPlan[]
   propertyBoosts       propertyBoosts[]
   propertyAnalytics    propertyAnalytics?
   propertyTransactions propertyTransactions[]
   applications         propertyApplications[]
-
-  agencyId             String   @db.ObjectId
-  agency               agencies @relation(fields: [agencyId], references: [id])
-
-  agentId              String?  @db.ObjectId
-  agent                agents?  @relation(fields: [agentId], references: [id])
+  leases               leases[]
+  invoices             invoices[]
+  propertyInspections  propertyInspections[]
 }
+
+enum ListingStep {
+  BASIC_INFO
+  STRUCTURE
+  MEDIA
+  PRICING
+  REVIEW
+}
+
 model PropertyImages {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  propertyId  String   @db.ObjectId
-  property    properties @relation(fields: [propertyId], references: [id])
-  fileId     String   // from ImageKit or Cloudinary
-  url         String
-  caption     String?
-  type        String?  // e.g. INTERIOR, EXTERIOR
-  isCover     Boolean  @default(false)
-  order       Int?     @default(0)
-  createdAt   DateTime @default(now())
+  id     String        @id @default(uuid())
+  unitId String
+  unit   propertyUnits @relation(fields: [unitId], references: [id])
+  fileId String
+  url    String
+  caption String?
+  type    String?
+  isCover Boolean  @default(false)
+  order   Int?     @default(0)
+  createdAt DateTime @default(now())
 }
-model PropertyStructureLocale {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  structureId     String   @db.ObjectId
-  countryCode     String   // e.g. "NG", "US", "UK"
-  localName       String   // e.g. "Self Contain", "Studio"
-  description     String?
-  examples        String[]
 
-  structure       PropertyStructure @relation(fields: [structureId], references: [id])
+model PropertyStructureLocale {
+  id          String @id @default(uuid())
+  structureId String
+  countryCode String
+  localName   String
+  description String?
+  examples    String[]
+
+  structure PropertyStructure @relation(fields: [structureId], references: [id])
 }
 
 model PropertyStructure {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
-  bedrooms        Int?      // Number of bedrooms
-  bathrooms       Int?      
-  toilets         Int?      
+  id              String   @id @default(uuid())
+  bedrooms        Int?
+  bathrooms       Int?
+  toilets         Int?
   livingRooms     Int?
   kitchens        Int?
-  kitchenType     KitchenType?  // PRIVATE, SHARED, OUTDOOR
-  toiletLocation  ToiletLocation? // INDOOR, OUTDOOR, SHARED
-  isWholeBuilding Boolean? @default(false)
-  isServiced      Boolean? @default(false)
-  floorLevel      Int?       // e.g., 1st floor, 2nd floor (for apartments)
-  hasBalcony      Boolean? @default(false)
-  petPolicy       PetPolicy? @default(NOT_ALLOWED)
-  petDetails      Json?      // e.g. { type: "dog", allowed: false, fee: 5000 }
+  kitchenType     KitchenType?
+  toiletLocation  ToiletLocation?
+  isWholeBuilding Boolean?        @default(false)
+  isServiced      Boolean?        @default(false)
+  floorLevel      Int?
+  hasBalcony      Boolean?        @default(false)
+  petPolicy       PetPolicy?      @default(NOT_ALLOWED)
+  petDetails      Json?
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime? @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 
-  // relations
-  property        properties?
+  unit                    propertyUnits?
+  PropertyStructureLocale PropertyStructureLocale[]
 }
+
 enum KitchenType {
   PRIVATE
   SHARED
@@ -497,68 +774,79 @@ enum PetPolicy {
 }
 
 model propertyPricing {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  propertyId   String   @unique @db.ObjectId
-  basePrice     Float
-  cautionFee    Float?       // security deposit
-  agentFee      Float?       // commission or agency charge
-  legalFee      Float?       // optional
-  serviceCharge Float?       // optional
-  paymentType   PropertyCategory? // e.g. RENT, SALE, LEASE
-  paymentFrequency PaymentFrequency?
-  leaseTerm     LeaseTerm?
-  currency      String? @default("NGN")
-  negotiable    Boolean? @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime? @updatedAt
+  id        String   @id @default(uuid())
+  listingId String   @unique
+  listing   listings @relation(fields: [listingId], references: [id])
 
-  property      properties @relation(fields: [propertyId], references: [id])
+  basePrice        Float
+  cautionFee       Float?
+  agentFee         Float?
+  legalFee         Float?
+  serviceCharge    Float?
+  paymentType      PropertyCategory?
+  paymentFrequency PaymentFrequency?
+  leaseTerm        LeaseTerm?
+  currency         String?           @default("NGN")
+  negotiable       Boolean?          @default(false)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
 model PropertyVideo {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  propertyId  String   @db.ObjectId
-  property    properties @relation(fields: [propertyId], references: [id])
-  fileId     String   // from ImageKit / Cloudinary
-  url         String
-  thumbnail   String?
-  title       String?
-  duration    Float?
-  createdAt   DateTime @default(now())
+  id     String        @id @default(uuid())
+  unitId String
+  unit   propertyUnits @relation(fields: [unitId], references: [id])
+  fileId String
+  url    String
+  thumbnail String?
+  title     String?
+  duration  Float?
+  createdAt DateTime @default(now())
 }
-model floorPlan {
-   id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  propertyId   String    @db.ObjectId
-  property    properties  @relation(fields: [propertyId], references: [id])
-  fileId     String
-  name        String?    // e.g., "Ground Floor", "3-Bedroom Layout"
-  description String?    // Optional details
-  imageUrl    String?    // Link to image or PDF (Cloudinary, S3, etc.)
-  layout      Json?      // Optional structured data { bedrooms: 3, bathrooms: 2 }
 
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime?   @updatedAt
+model propertyNearbyPlaces {
+  id         String     @id @default(uuid())
+  propertyId String
+  name       String
+  category   String
+  distanceKm Float?
+  property   properties @relation(fields: [propertyId], references: [id])
+}
+
+model floorPlan {
+  id     String        @id @default(uuid())
+  unitId String
+  unit   propertyUnits @relation(fields: [unitId], references: [id])
+  fileId String
+  name        String?
+  description String?
+  imageUrl    String?
+  layout      Json?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
 model propertyDocuments {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  propertyId   String?  @db.ObjectId
-  name         String            // e.g. "Certificate of Occupancy"
-  type         DocumentType      // enum, e.g. COFO, SURVEY, DEED, ALLOCATION, OTHERS
-  url          String            // file URL (e.g., from Cloudinary)
-    fileId     String
-  uploadedById String?  @db.ObjectId
-  verified     Boolean? @default(false)
+  id         String  @id @default(uuid())
+  propertyId String? // building-wide docs (COFO, survey plan)
+  name       String
+  type       DocumentType
+  url        String
+  fileId     String
+  uploadedById String?
+  verified     Boolean?  @default(false)
   verifiedAt   DateTime?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
   updatedAt    DateTime? @updatedAt
 
-  // relations
-  property     properties? @relation(fields: [propertyId], references: [id])
-  uploadedBy   agents?     @relation(fields: [uploadedById], references: [id])
+  property   properties? @relation(fields: [propertyId], references: [id])
+  uploadedBy agents?     @relation(fields: [uploadedById], references: [id])
 }
+
 enum DocumentType {
-  COFO           // Certificate of Occupancy
+  COFO
   SURVEY_PLAN
   DEED
   ALLOCATION_LETTER
@@ -568,7 +856,7 @@ enum DocumentType {
 }
 
 model userAnalytics {
-  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  id              String   @id @default(uuid())
   userId          String   @unique
   country         String?
   city            String?
@@ -578,14 +866,16 @@ model userAnalytics {
   recommendations Json?
   lastTrained     DateTime @default(now())
 
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 }
 
+// Now tracks engagement on the OFFER, not the physical space — a relisted
+// unit starts fresh analytics, which is correct (new offer, new interest).
 model propertyAnalytics {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  propertyId   String   @unique @db.ObjectId
-  agencyId     String   @db.ObjectId
+  id           String   @id @default(uuid())
+  listingId    String   @unique
+  agencyId     String
   views        Int      @default(0)
   inquiries    Int      @default(0)
   saved        Int      @default(0)
@@ -598,60 +888,198 @@ model propertyAnalytics {
   boostedRents Int @default(0)
   boostedSales Int @default(0)
 
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
-  agency   agencies   @relation(fields: [agencyId], references: [id])
-  property properties @relation(fields: [propertyId], references: [id])
+  agency  agencies @relation(fields: [agencyId], references: [id])
+  listing listings @relation(fields: [listingId], references: [id])
 }
 
 model agencyAnalytics {
-  id            String @id @default(auto()) @map("_id") @db.ObjectId
+  id            String @id @default(uuid())
   totalVisitors Int    @default(0)
 
-  countryStats Json? // Store aggregated country data { "US": 20, "IN": 50, "UK": 15 }
-  cityStats    Json? // Store aggregated city data { "New York": 10, "Delhi": 25 }
-  deviceStats  Json? // Store aggregated device data { "Mobile": 50, "Desktop": 30 }
+  countryStats Json?
+  cityStats    Json?
+  deviceStats  Json?
 
   lastVisitedAt DateTime
 
   createdAt DateTime   @default(now())
-  updatedAt DateTime?   @updatedAt
+  updatedAt DateTime?  @updatedAt
   agencies  agencies[]
 }
 
 model uniqueAgencyVisitors {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  agencyId  String   @db.ObjectId
-  userId    String   @db.ObjectId
+  id        String   @id @default(uuid())
+  agencyId  String
+  userId    String
   visitedAt DateTime @default(now())
 
   @@unique([agencyId, userId])
 }
 
 model propertyApplications {
-  id         String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId     String  @db.ObjectId
-  propertyId String  @db.ObjectId
-  agencyId   String? @db.ObjectId
+  id        String @id @default(uuid())
+  userId    String
+  listingId String
+  agencyId  String?
 
-  // New fields 👇
   userStatus    ApplicationUserStatus   @default(PENDING)
   agencyStatus  ApplicationAgencyStatus @default(PENDING)
   overallStatus ApplicationStatus       @default(PENDING)
 
- 
   createdAt DateTime  @default(now())
-  updatedAt DateTime?  @updatedAt
+  updatedAt DateTime? @updatedAt
 
-  user     users      @relation(fields: [userId], references: [id])
-  property properties @relation(fields: [propertyId], references: [id])
-  agency   agencies?  @relation(fields: [agencyId], references: [id])
+  user    users     @relation(fields: [userId], references: [id])
+  listing listings  @relation(fields: [listingId], references: [id])
+  agency  agencies? @relation(fields: [agencyId], references: [id])
+  buyers  buyers?   @relation(fields: [buyersId], references: [id])
+  buyersId String?
+}
+
+enum TenantStatus {
+  ACTIVE
+  INACTIVE
+  FORMER
+}
+
+model tenants {
+  id       String       @id @default(uuid())
+  agencyId String
+  userId   String
+  status   TenantStatus @default(ACTIVE)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency agencies @relation(fields: [agencyId], references: [id])
+  user   users    @relation(fields: [userId], references: [id])
+
+  leases       leases[]
+  transactions propertyTransactions[]
+  invoices     invoices[]
+
+  @@unique([agencyId, userId])
+}
+
+enum BuyerStatus {
+  ACTIVE
+  INACTIVE
+  CONVERTED
+}
+
+model buyers {
+  id       String      @id @default(uuid())
+  agencyId String
+  userId   String
+  status   BuyerStatus @default(ACTIVE)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency agencies @relation(fields: [agencyId], references: [id])
+  user   users    @relation(fields: [userId], references: [id])
+
+  transactions propertyTransactions[]
+  applications propertyApplications[]
+
+  @@unique([agencyId, userId])
+}
+
+enum LeaseStatus {
+  DRAFT
+  PENDING_SIGNATURE
+  ACTIVE
+  EXPIRED
+  TERMINATED
+  RENEWED
+}
+
+enum LeaseTermType {
+  MONTHLY
+  QUARTERLY
+  YEARLY
+  CUSTOM
+}
+
+model leases {
+  id        String @id @default(uuid())
+  listingId String
+  agencyId  String
+  agentId   String?
+  tenantId  String
+
+  startDate  DateTime
+  endDate    DateTime
+  rentAmount Decimal       @db.Decimal(14, 2)
+  currency   Currency      @default(NGN)
+  termType   LeaseTermType @default(YEARLY)
+  status     LeaseStatus   @default(DRAFT)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  listing   listings         @relation(fields: [listingId], references: [id])
+  agency    agencies         @relation(fields: [agencyId], references: [id])
+  agent     agents?          @relation(fields: [agentId], references: [id])
+  tenant    tenants          @relation(fields: [tenantId], references: [id])
+  agreement leaseAgreements?
+  invoices  invoices[]
+}
+
+model leaseAgreements {
+  id             String    @id @default(uuid())
+  leaseId        String    @unique
+  fileUrl        String?
+  fileId         String?
+  signedByTenant Boolean   @default(false)
+  signedByAgency Boolean   @default(false)
+  tenantSignedAt DateTime?
+  agencySignedAt DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  lease leases @relation(fields: [leaseId], references: [id])
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model invoices {
+  id        String  @id @default(uuid())
+  agencyId  String
+  tenantId  String?
+  listingId String?
+  leaseId   String?
+
+  invoiceNumber String        @unique
+  amount        Decimal       @db.Decimal(14, 2)
+  currency      Currency      @default(NGN)
+  dueDate       DateTime
+  status        InvoiceStatus @default(DRAFT)
+  paidAt        DateTime?
+  description   String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency  agencies  @relation(fields: [agencyId], references: [id])
+  tenant  tenants?  @relation(fields: [tenantId], references: [id])
+  listing listings? @relation(fields: [listingId], references: [id])
+  lease   leases?   @relation(fields: [leaseId], references: [id])
 }
 
 model address {
-  id        String      @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String      @db.ObjectId
+  id        String      @id @default(uuid())
+  userId    String
   label     addressType
   name      String
   street    String
@@ -661,62 +1089,69 @@ model address {
   isDefault Boolean     @default(true)
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime?  @updatedAt
+  updatedAt DateTime? @updatedAt
 }
 
 model notifications {
-  id            String  @id @default(auto()) @map("_id") @db.ObjectId
-  creatorId     String? //  @db.ObjectId
+  id            String  @id @default(uuid())
+  creatorId     String?
   receiverId    String
   redirect_link String?
   title         String
   message       String
   status        String  @default("Unread")
   type          String?
-  channel   String?   // EMAIL | PUSH | IN_APP | SMS
+  channel       String?
   meta          Json?
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 }
 
 model conversationGroup {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  isGroup        Boolean  @default(false)
-  name           String?
-  creatorId      String
-  participantIds String[] @db.ObjectId
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime? @updatedAt
+  id        String   @id @default(uuid())
+  isGroup   Boolean  @default(false)
+  name      String?
+  creatorId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants participants[]
+  message      message[]
 }
 
-model participant {
-  id             String    @id @default(auto()) @map("_id") @db.ObjectId
-  conversationId String    @db.ObjectId
-  userId         String?   @db.ObjectId
-  agentId        String?   @db.ObjectId
+model participants {
+  id             String    @id @default(uuid())
+  conversationId String
+  userId         String?
+  agentId        String?
   lastSeenAt     DateTime?
   isOnline       Boolean   @default(false)
   unreadCount    Int       @default(0)
   muted          Boolean   @default(false)
   joinedAt       DateTime  @default(now())
+
+  conversation conversationGroup @relation(fields: [conversationId], references: [id])
 }
 
 model message {
-  id             String   @id @default(auto()) @map("_id") @db.ObjectId
-  conversationId String   @db.ObjectId
-  senderId       String   @db.ObjectId
-  senderType     String
-  content        String?
-  attachments    String[]
-  status         String   @default("sent")
-  createdAt      DateTime @default(now())
+  id String @id @default(uuid())
 
-  @@unique([conversationId, senderId, content, createdAt])
+  conversationId String
+  senderId       String
+  senderType     String
+
+  content     String?
+  attachments String[]
+  status      String   @default("sent")
+
+  createdAt DateTime @default(now())
+
+  conversation conversationGroup @relation(fields: [conversationId], references: [id])
+
+  @@index([conversationId, createdAt(sort: Desc)])
 }
-// ----------------------
-// ENUMS
-// ----------------------
+
 enum EventType {
   AGENCY
   PROPERTY
@@ -749,6 +1184,7 @@ enum CreditType {
   SPENT
   PURCHASED
   REFUNDED
+  TASK_REWARD
 }
 
 enum AdminStatus {
@@ -758,213 +1194,201 @@ enum AdminStatus {
   DEACTIVATED
 }
 
-// ----------------------
-// MARKETING EVENTS
-// ----------------------
 model marketingEvents {
-  id              String              @id @default(auto()) @map("_id") @db.ObjectId
-  title           String
-  description     String?
-  platforms       PlatformType[]      @default([WEB, MOBILE])
-  showOnHomepage  Boolean             @default(false)
-  startDate       DateTime
-  endDate         DateTime
-  status          EventStatus         @default(ACTIVE)
-  pointsUsed      Int                 @default(0)
-  type            EventType
+  id             String         @id @default(uuid())
+  title          String
+  description    String?
+  platforms      PlatformType[] @default([WEB, MOBILE])
+  showOnHomepage Boolean        @default(false)
+  startDate      DateTime
+  endDate        DateTime
+  status         EventStatus    @default(ACTIVE)
+  pointsUsed     Int            @default(0)
+  type           EventType
 
-  agencyId        String?             @db.ObjectId
-  adminId         String?             @db.ObjectId
+  agencyId String?
+  adminId  String?
 
-  agency          agencies?           @relation(fields: [agencyId], references: [id])
-  admin           admins?             @relation(fields: [adminId], references: [id])
-  images          eventImages[]
-  transactions    creditTransactions[]
-  propertyLinks   eventPropertyLink[] // explicit M2M
+  agency        agencies?            @relation(fields: [agencyId], references: [id])
+  admin         admins?              @relation(fields: [adminId], references: [id])
+  images        eventImages[]
+  transactions  creditTransactions[]
+  propertyLinks eventPropertyLink[]
 
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime?            @updatedAt
-}
-
-// Explicit M2M join between marketingEvents and properties
-model eventPropertyLink {
-  id            String            @id @default(auto()) @map("_id") @db.ObjectId
-  eventId       String            @db.ObjectId
-  propertyId    String            @db.ObjectId
-
-  marketingEvent marketingEvents   @relation(fields: [eventId], references: [id])
-  property       properties        @relation(fields: [propertyId], references: [id])
-}
-
-// ----------------------
-// IMAGES
-// ----------------------
-model eventImages {
-  id         String             @id @default(auto()) @map("_id") @db.ObjectId
-  fileId    String
-  url        String
-  eventId    String?            @db.ObjectId
-  event      marketingEvents?   @relation(fields: [eventId], references: [id])
-  platform   PlatformType?
- 
   createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
-// ----------------------
-// PROPERTY BOOSTS
-// ----------------------
+// Marketing events still link at the PROPERTY (asset) level — promoting
+// "Ikeja City Mall" as a whole, not one specific shop's offer. If you need
+// to promote a specific listing later, add a parallel eventListingLink.
+model eventPropertyLink {
+  id         String @id @default(uuid())
+  eventId    String
+  propertyId String
+
+  marketingEvent marketingEvents @relation(fields: [eventId], references: [id])
+  property       properties      @relation(fields: [propertyId], references: [id])
+}
+
+model eventImages {
+  id       String           @id @default(uuid())
+  fileId   String
+  url      String
+  eventId  String?
+  event    marketingEvents? @relation(fields: [eventId], references: [id])
+  platform PlatformType?
+
+  createdAt DateTime @default(now())
+}
+
 model propertyBoosts {
-  id            String         @id @default(auto()) @map("_id") @db.ObjectId
-  agencyId      String         @db.ObjectId
-  propertyId    String         @db.ObjectId
+  id        String @id @default(uuid())
+  agencyId  String
+  listingId String
   tier          BoostTier
-  creditsSpent  Int            @default(0)
-  startTime     DateTime       @default(now())
+  creditsSpent  Int         @default(0)
+  startTime     DateTime    @default(now())
   endTime       DateTime
-  status        BoostStatus    @default(PENDING)
+  status        BoostStatus @default(PENDING)
   priorityScore Int
 
-  agency        agencies       @relation(fields: [agencyId], references: [id])
-  property      properties     @relation(fields: [propertyId], references: [id])
-  createdAt      DateTime            @default(now())
+  agency             agencies             @relation(fields: [agencyId], references: [id])
+  listing            listings             @relation(fields: [listingId], references: [id])
+  createdAt          DateTime             @default(now())
+  creditTransactions creditTransactions[]
 }
 
-// ----------------------
-// AGENCY CREDITS
-// ----------------------
 model agencyCredits {
-  id          String               @id @default(auto()) @map("_id") @db.ObjectId
-  agencyId    String               @unique @db.ObjectId
-  balance     Int                  @default(0)
-  lastUpdated DateTime             @default(now())
+  id          String   @id @default(uuid())
+  agencyId    String   @unique
+  balance     Int      @default(0)
+  lastUpdated DateTime @default(now())
 
-  agency      agencies             @relation(fields: [agencyId], references: [id])
+  agency       agencies             @relation(fields: [agencyId], references: [id])
   transactions creditTransactions[]
-  createdAt      DateTime            @default(now())
+  createdAt    DateTime             @default(now())
 }
 
 model creditTransactions {
-  id             String              @id @default(auto()) @map("_id") @db.ObjectId
-  agencyId       String              @db.ObjectId
-  type           CreditType
-  amount         Float
-  balanceBefore  Float
-  balanceAfter   Float
-  reference      String?
-  purpose        String?
-  note           String?
-  eventId        String?             @db.ObjectId
-  boostId        String?             @db.ObjectId
-  promotionId    String?             @db.ObjectId
+  id            String     @id @default(uuid())
+  agencyId      String
+  type          CreditType
+  amount        Int        // credits, not currency — matches balance's Int type
+  balanceBefore Int
+  balanceAfter  Int
+  reference     String?
+  purpose       String?
+  note          String?
+  eventId       String?
+  boostId       String?
+  promotionId   String?
 
   createdAt DateTime  @default(now())
-  updatedAt DateTime?  @updatedAt
-  
-  agency          agencies           @relation(fields: [agencyId], references: [id])
-  marketingEvent  marketingEvents?   @relation(fields: [eventId], references: [id])
-  propertyBoost   propertyBoosts?    @relation(fields: [boostId], references: [id])
-  promotion       promotions?        @relation(fields: [promotionId], references: [id])
+  updatedAt DateTime? @updatedAt
+
+  agency         agencies         @relation(fields: [agencyId], references: [id])
+  marketingEvent marketingEvents? @relation(fields: [eventId], references: [id])
+  propertyBoost  propertyBoosts?  @relation(fields: [boostId], references: [id])
+  promotion      promotions?      @relation(fields: [promotionId], references: [id])
 }
 
 model creditSettings {
-  id             String              @id @default(auto()) @map("_id") @db.ObjectId
-  action        String                       // e.g. "BOOST_PROPERTY", "SEARCH_PROPERTY", "POST_PROPERTY"
-  tier          String?                      // e.g. "BRONZE", "SILVER", "GOLD" or "BASIC", "PREMIUM"
-  cost          Int                           // number of credits to deduct
-  currencyValue Float?     @default(0)        // optional: real money equivalent (e.g., 10 credits = 1 USD)
+  id            String  @id @default(uuid())
+  action        String
+  tier          String?
+  cost          Int
+  currencyValue Float?  @default(0)
   description   String?
-  isActive      Boolean     @default(true)
+  isActive      Boolean @default(true)
 
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime?    @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
 }
 
-// ----------------------
-// ADMINS, ROLES & PERMISSIONS
-// ----------------------
 model admins {
-  id          String             @id @default(auto()) @map("_id") @db.ObjectId
-  name        String
-  email       String             @unique
-  password    String
-  status      AdminStatus        @default(PENDING)
-  isActive    Boolean            @default(true)
-  createdAt   DateTime           @default(now())
-  updatedAt   DateTime?               @updatedAt
+  id        String      @id @default(uuid())
+  name      String
+  email     String      @unique
+  password  String
+  status    AdminStatus @default(PENDING)
+  isActive  Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime?   @updatedAt
 
-  roleLinks   adminRoleLink[]
-  logs        adminActivityLogs[]
-  events      marketingEvents[]
+  roleLinks adminRoleLink[]
+  logs      adminActivityLogs[]
+  events    marketingEvents[]
 }
 
-// explicit join: Admin ↔ Role
 model adminRoleLink {
-  id        String       @id @default(auto()) @map("_id") @db.ObjectId
-  adminId   String       @db.ObjectId
-  roleId    String       @db.ObjectId
-  admin     admins       @relation(fields: [adminId], references: [id])
-  role      adminRoles   @relation(fields: [roleId], references: [id])
+  id      String     @id @default(uuid())
+  adminId String
+  roleId  String
+  admin   admins     @relation(fields: [adminId], references: [id])
+  role    adminRoles @relation(fields: [roleId], references: [id])
 }
 
 model adminRoles {
-  id          String                @id @default(auto()) @map("_id") @db.ObjectId
-  name        String                @unique
-  description String?
+  id              String               @id @default(uuid())
+  name            String               @unique
+  description     String?
   permissionLinks rolePermissionLink[]
-  roleLinks   adminRoleLink[]
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime?              @updatedAt
+  roleLinks       adminRoleLink[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime?            @updatedAt
 }
 
 model adminPermissions {
-  id           String                @id @default(auto()) @map("_id") @db.ObjectId
-  code         String                @unique
-  description  String?
+  id              String               @id @default(uuid())
+  code            String               @unique
+  description     String?
   permissionLinks rolePermissionLink[]
 }
 
-// explicit join: Role ↔ Permission
 model rolePermissionLink {
-  id            String             @id @default(auto()) @map("_id") @db.ObjectId
-  roleId        String             @db.ObjectId
-  permissionId  String             @db.ObjectId
-  role          adminRoles         @relation(fields: [roleId], references: [id])
-  permission    adminPermissions   @relation(fields: [permissionId], references: [id])
+  id           String           @id @default(uuid())
+  roleId       String
+  permissionId String
+  role         adminRoles       @relation(fields: [roleId], references: [id])
+  permission   adminPermissions @relation(fields: [permissionId], references: [id])
 }
 
-// ----------------------
-// ADMIN LOGS
-// ----------------------
 model adminActivityLogs {
-  id          String     @id @default(auto()) @map("_id") @db.ObjectId
-  adminId     String     @db.ObjectId
+  id          String   @id @default(uuid())
+  adminId     String
   action      String
   targetId    String?
   targetType  String?
   description String?
-  createdAt   DateTime   @default(now())
+  createdAt   DateTime @default(now())
 
-  admin       admins     @relation(fields: [adminId], references: [id])
+  admin admins @relation(fields: [adminId], references: [id])
 }
 
-
 model propertyTransactions {
-  id           String         @id @default(auto()) @map("_id") @db.ObjectId
-  type         PropertyCategory   @default(RENT)
-  userId       String         @db.ObjectId
-  propertyId   String         @db.ObjectId
-  agencyId     String         @db.ObjectId
-  startDate    DateTime?
-  endDate      DateTime?
-  amount       Float?
-  paymentRef   String?
-  status       OrderStatus    @default(PENDING)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime?       @updatedAt
+  id        String           @id @default(uuid())
+  type      PropertyCategory @default(RENT)
+  userId    String
+  listingId String
+  agencyId  String
+  startDate DateTime?
+  endDate   DateTime?
+  amount    Decimal?  @db.Decimal(14, 2)
+  currency  Currency  @default(NGN)
+  paymentRef String?
+  status     OrderStatus @default(PENDING)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime?   @updatedAt
 
-  user         users          @relation(fields: [userId], references: [id])
-  property     properties     @relation(fields: [propertyId], references: [id])
-  agency       agencies       @relation(fields: [agencyId], references: [id])
+  tenantId String?
+  buyerId  String?
+  tenant   tenants? @relation(fields: [tenantId], references: [id])
+  buyer    buyers?  @relation(fields: [buyerId], references: [id])
+
+  user    users    @relation(fields: [userId], references: [id])
+  listing listings @relation(fields: [listingId], references: [id])
+  agency  agencies @relation(fields: [agencyId], references: [id])
 }
 
 enum OrderStatus {
@@ -974,42 +1398,43 @@ enum OrderStatus {
   FAILED
   REFUNDED
 }
+
 model propertyMonitors {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId        String    @db.ObjectId
-  name          String?   // optional friendly name
+  id            String            @id @default(uuid())
+  userId        String
+  name          String?
   location      String?
   minPrice      Float?
   maxPrice      Float?
   bedrooms      Int?
   bathrooms     Int?
   propertyType  String?
-  category      PropertyCategory? // RENT, SALE, etc.
-  frequency     NotifyFrequency     @default(IMMEDIATE) // IMMEDIATE / DAILY / WEEKLY
-  isActive      Boolean   @default(true)
-  lastCheckedAt DateTime? // used by cron to only fetch new properties
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  category      PropertyCategory?
+  frequency     NotifyFrequency   @default(IMMEDIATE)
+  isActive      Boolean           @default(true)
+  lastCheckedAt DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   user users @relation(fields: [userId], references: [id])
 }
 
 model nonitorNotifications {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId    String   @db.ObjectId
+  id        String   @id @default(uuid())
+  userId    String
   title     String
   message   String
   data      Json?
-  channel   String   // EMAIL | PUSH | IN_APP | SMS
+  channel   String
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
 
 model monitorSentHistory {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
-  monitorId   String   @db.ObjectId
-  propertyId  String   @db.ObjectId
-  sentAt      DateTime @default(now())
+  id         String   @id @default(uuid())
+  monitorId  String
+  propertyId String
+  sentAt     DateTime @default(now())
 
   @@index([monitorId, propertyId])
 }
@@ -1018,4 +1443,31 @@ enum NotifyFrequency {
   IMMEDIATE
   DAILY
   WEEKLY
+}
+
+enum InspectionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+model propertyInspections {
+  id        String @id @default(uuid())
+  listingId String
+  agencyId  String
+  agentId   String?
+  requestedById String?
+
+  scheduledAt DateTime
+  status      InspectionStatus @default(SCHEDULED)
+  notes       String?
+  feedback    String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  listing listings @relation(fields: [listingId], references: [id])
+  agency  agencies @relation(fields: [agencyId], references: [id])
+  agent   agents?  @relation(fields: [agentId], references: [id])
 }

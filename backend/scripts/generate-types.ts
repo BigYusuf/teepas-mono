@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 
 const INPUT_FILE = path.resolve("./prisma/schema.prisma");
-const OUTPUT_FILE = path.resolve("./packages/types/generatedTypes.ts");
+const OUTPUT_FILE = path.resolve("./types/generatedTypes.ts");
 
 function parsePrismaSchema(schema: string) {
   const enums: string[] = [];

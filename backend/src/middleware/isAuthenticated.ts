@@ -17,6 +17,8 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
     const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET!) as {
       id: string;
       role: "user" | "agent" | "admin";
+      membershipId?: string;
+      agencyId?: string;
     };
 
     if (!decoded) {
@@ -27,52 +29,66 @@ const isAuthenticated = async (req: any, res: Response, next: NextFunction) => {
 
     let account;
 
-    if (decoded.role === "user" || decoded.role === "admin") {
-      account = await prisma.users.findUnique({
+    if (decoded.role === "user") {
+      const user = await prisma.users.findUnique({
         where: { id: decoded.id },
       });
-      req.user = account;
-    } else if (decoded.role === "agent") {
-      account = await prisma.agents.findUnique({
+      req.user = user;
+      req.role = "user";
+      return next();
+    }
+    if (decoded.role === "admin") {
+      const admin = await prisma.users.findUnique({
+        where: { id: decoded.id },
+      });
+      req.user = admin;
+      req.role = "user";
+      return next();
+    }
+    if (decoded.role === "agent") {
+      const agent = await prisma.agents.findUnique({
         where: { id: decoded.id },
         include: {
-          role: {
+          memberships: {
+            where: { id: decoded?.membershipId, agencyId: decoded?.agencyId },
+
             include: {
-              permissions: {
-                include: { permission: true }, // <-- important!
+              role: {
+                include: {
+                  permissions: {
+                    include: {
+                      permission: true,
+                    },
+                  },
+                },
               },
-            },
-          },
-          agency: {
-            include: {
-              addresses: true,
-              bankAccounts: true,
-              followers: true,
-              agencyCredits: true,
+
+              agency: {
+                include: {
+                  addresses: true,
+                  bankAccounts: true,
+                  agencyCredits: true,
+                  documents: true,
+                },
+              },
             },
           },
         },
       });
       // If agent has an agency but no agencyCredits, create one
-      if (account?.agency && !account.agency.agencyCredits) {
-        const newCredits = await prisma.agencyCredits.create({
-          data: {
-            agencyId: account.agency.id,
-            balance: 0,
-          },
-        });
 
-        // Attach it to the response so you don’t need to re-fetch
-        account.agency.agencyCredits = newCredits;
+      if (!agent) {
+        return res.status(401).json({ message: "Agent not found!" });
       }
-      req.agent = account;
+      req.role = "agent";
+      req.agent = agent;
+      req.membership = agent.memberships[0];
+      req.agency = agent.memberships[0].agency;
+      req.permissions = agent.memberships[0].role.permissions.map(
+        (p: any) => p.permission.key,
+      );
+      return next();
     }
-
-    if (!account) {
-      return res.status(401).json({ message: "Account not found!" });
-    }
-
-    req.role = decoded.role;
 
     return next();
   } catch (error) {

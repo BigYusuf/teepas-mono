@@ -8,13 +8,15 @@
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "build": "tsc",
-    "prisma:merge": "node prisma/merge-schema.js",
-    "prisma:generate": "npm run prisma:merge && npx prisma format && npx prisma generate",
-    "prisma:push": "npx prisma db push",
+    "merge": "node prisma/merge-schema.js",
+    "generate": "npm run merge && npx prisma format && npx prisma generate",
+    "seed": "npx prisma db seed",
+    "push": "npx prisma db push",
     "prisma:migrate": "npm run prisma:merge && npx prisma migrate dev",
     "generate:types": "ts-node scripts/generate-types.ts"
   },
   "dependencies": {
+    "@nutifar/node": "^1.0.1",
     "@prisma/client": "^6.7.0",
     "@tensorflow/tfjs": "^4.22.0",
     "@tensorflow/tfjs-backend-cpu": "^4.22.0",
@@ -25,6 +27,7 @@
     "dotenv": "^16.0.0",
     "ejs": "^6.0.1",
     "express": "^4.18.0",
+    "express-rate-limit": "^8.5.2",
     "imagekit": "^6.0.0",
     "ioredis": "^5.11.0",
     "jsonwebtoken": "^9.0.3",
@@ -39,7 +42,8 @@
     "tsc": "^2.0.4",
     "tsconfig-paths": "^4.2.0",
     "tslib": "^2.6.0",
-    "ws": "^8.21.0"
+    "ws": "^8.21.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.3",
@@ -49,7 +53,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.1.0",
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.43",
     "@types/nodemailer": "^8.0.0",
     "@types/ws": "^8.18.1",
     "prisma": "6.7.0",
@@ -60,8 +64,12 @@
     "tsx": "^4.22.3",
     "typescript": "~5.7.2"
   },
+  "prisma": {
+    "seed": "node prisma/seeds.js"
+  },
   "keywords": [],
-  "author": "",
+  "author": "BigYusuf",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "packageManager": "pnpm@9.12.0+sha512.4abf725084d7bcbafbd728bfc7bee61f2f791f977fd87542b3579dcb23504d170d46337945e4c66485cd12d588a0c0e570ed9c477e7ccdd8507cf05f3f92eaca"
 }
