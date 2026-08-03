@@ -283,16 +283,6 @@ enum Tag {
   EXCLUSIVE
 }
 
-enum Currency {
-  USD
-  EUR
-  GBP
-  NGN
-  KES
-  GHS
-  ZAR
-}
-
 enum Duration {
   DAILY
   WEEKLY

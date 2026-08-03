@@ -202,6 +202,61 @@ const seedRolesAndPermissions = async () => {
       description: "Access platform-wide reports and insights",
       category: "Platform",
     },
+    // Finance / Payments (new)
+    {
+      key: "manage_escrow",
+      name: "Manage Escrow Payments",
+      description: "View, confirm, or dispute escrow-held payments",
+      category: "Finance",
+    },
+    {
+      key: "resolve_escrow_disputes",
+      name: "Resolve Escrow Disputes",
+      description: "Resolve disputed escrow payments (release or refund)",
+      category: "Platform", // admin-only — not agency-scoped
+    },
+    {
+      key: "manage_wallet",
+      name: "Manage Wallet",
+      description: "View wallet balance and transaction history",
+      category: "Finance",
+    },
+    {
+      key: "manage_withdrawals",
+      name: "Manage Withdrawals",
+      description: "Request withdrawals from agency wallet to bank account",
+      category: "Finance",
+    },
+
+    // Applications & Inspections (new)
+    {
+      key: "manage_inspections",
+      name: "Manage Inspections",
+      description: "Schedule and manage property inspections",
+      category: "Communication",
+    },
+
+    // Property / Units (new)
+    {
+      key: "manage_units",
+      name: "Manage Units",
+      description: "Add, edit, or delete units within a multi-unit property",
+      category: "Property",
+    },
+
+    // Marketing (new)
+    {
+      key: "create_marketing_events",
+      name: "Create Marketing Events",
+      description: "Create agency or property ad campaigns",
+      category: "Marketing",
+    },
+    {
+      key: "manage_currencies",
+      name: "Manage Currencies",
+      description: "Add or toggle supported currencies platform-wide",
+      category: "Platform",
+    },
   ];
 
   // Permissions
@@ -267,6 +322,12 @@ const seedRolesAndPermissions = async () => {
         "view_application_status",
         "manage_inquiries",
         "manage_reviews",
+        "manage_escrow",
+        "manage_wallet",
+        "manage_withdrawals",
+        "manage_inspections",
+        "manage_units",
+        "create_marketing_events",
       ),
     },
     {
@@ -301,6 +362,12 @@ const seedRolesAndPermissions = async () => {
         "manage_inquiries",
         "manage_reviews",
         "view_application_status",
+        "manage_escrow",
+        "manage_wallet",
+        "manage_withdrawals",
+        "manage_inspections",
+        "manage_units",
+        "create_marketing_events",
       ),
     },
     {
@@ -318,6 +385,8 @@ const seedRolesAndPermissions = async () => {
         "manage_promotions",
         "manage_marketing_events",
         "view_properties",
+        "manage_units",
+        "manage_inspections",
       ),
     },
     {
@@ -331,6 +400,8 @@ const seedRolesAndPermissions = async () => {
         "publish_property",
         "view_properties",
         "manage_inquiries",
+        "manage_units", // if agents can add/edit their own units — otherwise skip
+        "manage_inspections",
       ),
     },
     {
@@ -342,6 +413,9 @@ const seedRolesAndPermissions = async () => {
         "manage_finance",
         "view_finance",
         "view_agency_reports",
+        "manage_wallet",
+        "manage_withdrawals",
+        "manage_escrow", // to reconcile/view escrow status affecting the wallet
       ),
     },
     {
@@ -354,6 +428,7 @@ const seedRolesAndPermissions = async () => {
         "manage_boosts",
         "manage_marketing_events",
         "manage_agency_credits",
+        "create_marketing_events",
       ),
     },
     {
@@ -383,7 +458,11 @@ const seedRolesAndPermissions = async () => {
       name: "Tenant",
       description: "Applies for and manages rental applications",
       isDefault: true,
-      permissions: pick("apply_property", "view_application_status"),
+      permissions: pick(
+        "apply_property",
+        "view_application_status",
+        "manage_escrow", // to pay/confirm/dispute their own escrow payments — controller already scopes by payerId
+      ),
     },
   ];
 

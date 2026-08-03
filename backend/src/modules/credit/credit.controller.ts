@@ -1,11 +1,13 @@
+// controllers/credit.controller.ts
 import { AuthError, NotFoundError, ValidationError } from "../../error-handler";
-import crypto from "crypto";
 import prisma from "../../libs/prisma";
 import { NextFunction, Request, Response } from "express";
-import axios from "axios";
+import { initiateEscrowPayment as initiateFlutterwaveCharge, verifyTransaction } from "../../services/flutterwave.service";
 import { refundCreditsAdmin } from "./refund-credit-admin";
 
-// initiate point/credit buy
+// ------------------------------------------------------------------
+// INITIATE CREDIT/POINT PURCHASE
+// ------------------------------------------------------------------
 export const initiateFunding = async (
   req: any,
   res: Response,
@@ -16,11 +18,7 @@ export const initiateFunding = async (
 
     const agency = req?.agency;
     if (!agency) return next(new ValidationError("Agency not found"));
-
-    const paystackSecretKey =
-      process.env.PAYSTACK_ENV === "live"
-        ? process.env.PAYSTACK_LIVE_KEY
-        : process.env.PAYSTACK_TEST_KEY;
+    if (!amount || amount <= 0) return next(new ValidationError("A valid amount is required"));
 
     // ✅ Fetch or create agency credit record
     let agencyCredit = await prisma.agencyCredits.findUnique({
@@ -33,24 +31,18 @@ export const initiateFunding = async (
       });
     }
 
-    // ✅ Initialize Paystack transaction
-    const paystackRes = await axios.post(
-      "https://api.paystack.co/transaction/initialize",
-      {
-        email: agency.email,
-        amount: amount * 100, // convert to kobo
-        metadata: {
-          agencyId: agency.id,
-        },
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${paystackSecretKey}`,
-        },
-      },
-    );
+    const reference = `CREDIT-${agency.id}-${Date.now()}`;
 
-    const reference = paystackRes.data.data.reference;
+    // ✅ Initialize Flutterwave transaction — amount sent as-is, main
+    // currency unit, NOT multiplied by 100 (that's Paystack's convention)
+    const { checkoutUrl } = await initiateFlutterwaveCharge({
+      amount: Number(amount),
+      currency: "NGN", // TODO: derive from agency's preferred currency once multi-currency credit purchase is needed
+      email: agency.email,
+      txRef: reference,
+      redirectUrl: `${process.env.APP_URL}/wallet/funding/callback`,
+      narration: "Agency credit top-up",
+    });
 
     // ✅ Record initial transaction with correct balanceBefore
     await prisma.creditTransactions.create({
@@ -59,7 +51,7 @@ export const initiateFunding = async (
         type: "PURCHASED",
         amount,
         balanceBefore: agencyCredit.balance,
-        balanceAfter: agencyCredit.balance, // will update after webhook
+        balanceAfter: agencyCredit.balance, // updated after webhook confirms
         purpose: "FUND_WALLET_PENDING",
         reference,
       },
@@ -67,7 +59,7 @@ export const initiateFunding = async (
 
     res.status(200).json({
       success: true,
-      payment_url: paystackRes.data.data.authorization_url,
+      payment_url: checkoutUrl,
       reference,
     });
   } catch (error) {
@@ -76,75 +68,71 @@ export const initiateFunding = async (
 };
 
 // ------------------------------------------------------------------
-// PAYSTACK WEBHOOK HANDLER
+// FLUTTERWAVE WEBHOOK HANDLER — credit funding
 // ------------------------------------------------------------------
-export const paystackWebhook = async (req: Request, res: Response) => {
+export const flutterwaveCreditWebhook = async (req: Request, res: Response) => {
   try {
-    const secret: any =
-      process.env.PAYSTACK_ENV === "live"
-        ? process.env.PAYSTACK_LIVE_KEY
-        : process.env.PAYSTACK_TEST_KEY;
-
-    const hash = crypto
-      .createHmac("sha512", secret)
-      .update(JSON.stringify(req.body))
-      .digest("hex");
-
-    if (hash !== req.headers["x-paystack-signature"]) {
+    const signature = req.headers["verif-hash"];
+    if (!signature || signature !== process.env.FLUTTERWAVE_WEBHOOK_SECRET) {
       return res.status(401).json({ message: "Invalid signature" });
     }
 
-    const event = req.body.event;
-    const data = req.body.data;
+    const { data } = req.body as any;
+    if (data?.status !== "successful") {
+      return res.sendStatus(200);
+    }
 
-    if (event === "charge.success") {
-      const reference = data.reference;
-      const amount = data.amount / 100; // convert from kobo
-      const agencyId = data.metadata.agencyId;
+    // Re-verify directly against Flutterwave — never trust the webhook
+    // payload alone
+    const verified = await verifyTransaction(data.id);
+    if (verified.status !== "successful") {
+      return res.sendStatus(200);
+    }
 
-      const agency = await prisma.agencies.findUnique({
-        where: { id: agencyId },
-        include: { agencyCredits: true },
+    const reference = verified.tx_ref;
+    const amount = verified.amount; // already in main currency unit, no /100 needed
+
+    const pendingTx = await prisma.creditTransactions.findFirst({
+      where: { reference, purpose: "FUND_WALLET_PENDING" },
+    });
+
+    // Idempotency — webhook can fire more than once for the same event
+    if (!pendingTx) {
+      return res.sendStatus(200);
+    }
+
+    const agencyId = pendingTx.agencyId;
+
+    let agencyCredit = await prisma.agencyCredits.findUnique({
+      where: { agencyId },
+    });
+
+    if (!agencyCredit) {
+      agencyCredit = await prisma.agencyCredits.create({
+        data: { agencyId, balance: 0 },
       });
+    }
 
-      if (!agency) return res.status(404).json({ message: "Agency not found" });
+    const balanceBefore = agencyCredit.balance;
+    const balanceAfter = balanceBefore + amount;
 
-      // get or create agencyCredits
-      let agencyCredit = await prisma.agencyCredits.findUnique({
+    await prisma.$transaction([
+      prisma.agencyCredits.update({
         where: { agencyId },
-      });
-
-      if (!agencyCredit) {
-        agencyCredit = await prisma.agencyCredits.create({
-          data: { agencyId, balance: 0 },
-        });
-      }
-
-      const balanceBefore = agencyCredit.balance;
-      const balanceAfter = balanceBefore + amount;
-
-      // update balance
-      await prisma.agencyCredits.update({
-        where: { agencyId },
-        data: {
-          balance: balanceAfter,
-          lastUpdated: new Date(),
-        },
-      });
-
-      // update transaction record
-      await prisma.creditTransactions.updateMany({
-        where: { reference },
+        data: { balance: balanceAfter, lastUpdated: new Date() },
+      }),
+      prisma.creditTransactions.update({
+        where: { id: pendingTx.id },
         data: {
           balanceBefore,
           balanceAfter,
           purpose: "FUND_WALLET_SUCCESS",
-          note: "Paystack wallet funding successful",
+          note: "Flutterwave wallet funding successful",
         },
-      });
+      }),
+    ]);
 
-      console.log(`✅ Credit funded for Agency ${agencyId}: ₦${amount}`);
-    }
+    console.log(`✅ Credit funded for Agency ${agencyId}: ${amount}`);
 
     res.sendStatus(200);
   } catch (err) {
@@ -277,23 +265,11 @@ export const adminRefundCredits = async (
       throw new NotFoundError("Agency not found");
     }
 
-    // Refund credits
     await refundCreditsAdmin({
       agencyId,
       credits,
       reason: reason || "Manual admin refund",
     });
-
-    // // Optionally log admin action
-    // await prisma.adminAuditLog.create({
-    //   data: {
-    //     adminId: req.user?.id, // requires adminAuth middleware
-    //     agencyId,
-    //     action: "REFUND_CREDITS",
-    //     details: `Refunded ${credits} credits. Reason: ${reason || "Manual"}`,
-    //     createdAt: new Date(),
-    //   },
-    // });
 
     res.status(200).json({
       success: true,
@@ -313,31 +289,23 @@ export const upsertCreditSetting = async (
   try {
     const { action, tier, cost, currencyValue, description } = req.body;
 
-    const setting = await prisma.creditSettings.upsert({
-      where: {
-        action_tier: {
-          action,
-          tier: tier || "DEFAULT",
-        },
-      },
-      update: {
-        cost,
-        currencyValue,
-        description,
-      },
-      create: {
-        action,
-        tier: tier || "DEFAULT",
-        cost,
-        currencyValue,
-        description,
-      },
+    const tierValue = tier || "DEFAULT";
+    let setting = await prisma.creditSettings.findFirst({
+      where: { action, tier: tierValue },
     });
 
-    res.status(200).json({
-      success: true,
-      setting,
-    });
+    if (setting) {
+      setting = await prisma.creditSettings.update({
+        where: { id: setting.id },
+        data: { cost, currencyValue, description },
+      });
+    } else {
+      setting = await prisma.creditSettings.create({
+        data: { action, tier: tierValue, cost, currencyValue, description },
+      });
+    }
+
+    res.status(200).json({ success: true, setting });
   } catch (error) {
     next(error);
   }
@@ -354,11 +322,7 @@ export const getCreditSettings = async (
       orderBy: [{ action: "asc" }, { tier: "asc" }],
     });
 
-    res.status(200).json({
-      success: true,
-      count: settings.length,
-      settings,
-    });
+    res.status(200).json({ success: true, count: settings.length, settings });
   } catch (error) {
     next(error);
   }
@@ -396,10 +360,7 @@ export const deleteCreditSetting = async (
 
     await prisma.creditSettings.delete({ where: { id } });
 
-    res.status(200).json({
-      success: true,
-      message: "Credit setting deleted successfully",
-    });
+    res.status(200).json({ success: true, message: "Credit setting deleted successfully" });
   } catch (error) {
     next(error);
   }

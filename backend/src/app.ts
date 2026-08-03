@@ -17,10 +17,14 @@ import agencyRoutes from "./modules/agency/agency.routes";
 import agentRoutes from "./modules/agents/agent.routes";
 import propertyRoutes from "./modules/property/property.routes";
 import chatRoutes from "./modules/chat/chat.routes";
+import listingRoutes from "./modules/listings/listings.routes";
+import boostRoutes from "./modules/boost/boost.routes";
+import eventRoutes from "./modules/events/event.routes";
+import applicationRoutes from "./modules/application/application.routes";
+import escrowRoutes from "./modules/escrow/escrow.routes";
+import withdrawalRoutes from "./modules/withdrawals/withdrawal.routes";
+import creditRoutes from "./modules/credit/credit.routes";
 // import recommendationRoutes from "./modules/recommendations/recommendation.route";
-// import propertyRoutes from "./modules/property/property.routes";
-// import orderRoutes from "./modules/order/order.route";
-// import creditRoutes from "./modules/credit/credit.routes";
 
 const app = express();
 const BASE_PATH = config.BASE_PATH;
@@ -100,9 +104,15 @@ app.use(`${BASE_PATH}/memberships`, membershipRoutes); // memberships
 app.use(`${BASE_PATH}/invites`, inviteRoutes); // invites
 // app.use(`${BASE_PATH}/recommendations`, recommendationRoutes); // recommendations
 app.use(`${BASE_PATH}/properties`, propertyRoutes); // property routes
+app.use(`${BASE_PATH}/listings`, listingRoutes); // listings routes
+app.use(`${BASE_PATH}/boosts`, boostRoutes); // boosts routes
+app.use(`${BASE_PATH}/events`, eventRoutes); // marketing events routes
+app.use(`${BASE_PATH}/application`, applicationRoutes); // application routes
+app.use(`${BASE_PATH}/escrow`, escrowRoutes); // escrow routes
+app.use(`${BASE_PATH}/withdrawals`, withdrawalRoutes); // withdrawals routes
 app.use(`${BASE_PATH}/chatting`, chatRoutes); // chatting routes
 // app.use(`${BASE_PATH}/orders`, orderRoutes);
-// app.use(`${BASE_PATH}/credits`, creditRoutes);
+app.use(`${BASE_PATH}/credits`, creditRoutes); // credit routes
 // Error handler (always last)
 app.use(errorMiddleware);
 

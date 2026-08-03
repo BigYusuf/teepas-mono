@@ -5,12 +5,14 @@ const { initializeSiteConfig } = require("./seed/initializeSiteConfig");
 const { seedTasks } = require("./seed/initTaskSeed");
 const { seedRolesAndPermissions } = require("./seed/initRolesPermSeed");
 const { seedAmenities } = require("./seed/initAmenitiesSeed");
+const { seedCurrencies } = require("./seed/initCurrencies");
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("Seeding database");
 
+  await seedCurrencies();
   await seedRolesAndPermissions();
   await seedAmenities();
   await initializeSiteConfig();

@@ -396,6 +396,7 @@ model users {
   tenants          tenants[]
   buyers           buyers[]
   propertyMonitors propertyMonitors[]
+  escrowPayments   escrowPayments[]
 }
 
 model agencyReviews {
@@ -580,6 +581,9 @@ model agencies {
   creditTransactions   creditTransactions[]
   propertyTransactions propertyTransactions[]
   propertyInspections  propertyInspections[]
+  escrowPayments       escrowPayments[]
+  agencyWallets        agencyWallets[]
+  withdrawals          withdrawals[]
 }
 
 model agencyContact {
@@ -783,17 +787,21 @@ model agencyDocuments {
 }
 
 model agencyBankAccounts {
-  id            String    @id @default(uuid())
+  id            String @id @default(uuid())
   agencyId      String
   bankName      String
   accountName   String
   accountNumber String
-  currency      String    @default("NGN")
-  isPrimary     Boolean   @default(false)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime? @updatedAt
 
-  agency agencies @relation(fields: [agencyId], references: [id])
+  currencyId String     @default("NGN")
+  currency   currencies @relation(fields: [currencyId], references: [code])
+
+  isPrimary Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  agency      agencies      @relation(fields: [agencyId], references: [id])
+  withdrawals withdrawals[]
 }
 
 model roles {
@@ -1085,6 +1093,7 @@ model listings {
   leases               leases[]
   invoices             invoices[]
   propertyInspections  propertyInspections[]
+  escrowPayments       escrowPayments[]
 }
 
 enum ListingStep {
@@ -1161,24 +1170,44 @@ enum PetPolicy {
   REQUIRES_APPROVAL
 }
 
+enum PricingFeeType {
+  SECURITY_DEPOSIT
+  AGENT_FEE
+  APPLICATION_FEE
+  LEGAL_FEE
+  SERVICE_CHARGE
+  STAMP_DUTY
+  VAT
+  OTHER
+}
+
+model propertyPricingFees {
+  id        String          @id @default(uuid())
+  pricingId String          @unique
+  pricing   propertyPricing @relation(fields: [pricingId], references: [id])
+
+  label  String? // for OTHER or country-specific naming, e.g. "Holding Deposit"
+  type   PricingFeeType
+  amount Decimal        @db.Decimal(14, 2)
+}
+
 model propertyPricing {
   id        String   @id @default(uuid())
   listingId String   @unique
   listing   listings @relation(fields: [listingId], references: [id])
 
-  basePrice        Float
-  cautionFee       Float?
-  agentFee         Float?
-  legalFee         Float?
-  serviceCharge    Float?
+  basePrice Decimal @db.Decimal(14, 2)
+
+  leaseTerm        LeaseTerm?
   paymentType      PropertyCategory?
   paymentFrequency PaymentFrequency?
-  leaseTerm        LeaseTerm?
-  currency         String?           @default("NGN")
-  negotiable       Boolean?          @default(false)
 
-  createdAt DateTime  @default(now())
-  updatedAt DateTime? @updatedAt
+  currencyId String     @default("NGN")
+  currency   currencies @relation(fields: [currencyId], references: [code])
+
+  negotiable Boolean? @default(false)
+
+  fees propertyPricingFees[]
 }
 
 model PropertyVideo {
@@ -1401,19 +1430,24 @@ model leases {
 
   startDate  DateTime
   endDate    DateTime
-  rentAmount Float
-  termType   LeaseTermType @default(YEARLY)
-  status     LeaseStatus   @default(DRAFT)
+  rentAmount Decimal  @db.Decimal(14, 2)
+
+  currencyId String     @default("NGN")
+  currency   currencies @relation(fields: [currencyId], references: [code])
+
+  termType LeaseTermType @default(YEARLY)
+  status   LeaseStatus   @default(DRAFT)
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
-  listing   listings         @relation(fields: [listingId], references: [id])
-  agency    agencies         @relation(fields: [agencyId], references: [id])
-  agent     agents?          @relation(fields: [agentId], references: [id])
-  tenant    tenants          @relation(fields: [tenantId], references: [id])
-  agreement leaseAgreements?
-  invoices  invoices[]
+  listing        listings         @relation(fields: [listingId], references: [id])
+  agency         agencies         @relation(fields: [agencyId], references: [id])
+  agent          agents?          @relation(fields: [agentId], references: [id])
+  tenant         tenants          @relation(fields: [tenantId], references: [id])
+  agreement      leaseAgreements?
+  invoices       invoices[]
+  escrowPayments escrowPayments[]
 }
 
 model leaseAgreements {
@@ -1447,12 +1481,16 @@ model invoices {
   listingId String?
   leaseId   String?
 
-  invoiceNumber String        @unique
-  amount        Float
-  dueDate       DateTime
-  status        InvoiceStatus @default(DRAFT)
-  paidAt        DateTime?
-  description   String?
+  invoiceNumber String  @unique
+  amount        Decimal @db.Decimal(14, 2)
+
+  currencyId String     @default("NGN")
+  currency   currencies @relation(fields: [currencyId], references: [code])
+
+  dueDate     DateTime
+  status      InvoiceStatus @default(DRAFT)
+  paidAt      DateTime?
+  description String?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
@@ -1660,9 +1698,9 @@ model creditTransactions {
   id            String     @id @default(uuid())
   agencyId      String
   type          CreditType
-  amount        Float
-  balanceBefore Float
-  balanceAfter  Float
+  amount        Int // credits, not currency — matches balance's Int type
+  balanceBefore Int
+  balanceAfter  Int
   reference     String?
   purpose       String?
   note          String?
@@ -1755,18 +1793,22 @@ model adminActivityLogs {
 }
 
 model propertyTransactions {
-  id         String           @id @default(uuid())
-  type       PropertyCategory @default(RENT)
-  userId     String
-  listingId  String
-  agencyId   String
-  startDate  DateTime?
-  endDate    DateTime?
-  amount     Float?
+  id        String           @id @default(uuid())
+  type      PropertyCategory @default(RENT)
+  userId    String
+  listingId String
+  agencyId  String
+  startDate DateTime?
+  endDate   DateTime?
+  amount    Decimal?         @db.Decimal(14, 2)
+
+  currencyId String     @default("NGN")
+  currency   currencies @relation(fields: [currencyId], references: [code])
+
   paymentRef String?
-  status     OrderStatus      @default(PENDING)
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime?        @updatedAt
+  status     OrderStatus @default(PENDING)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime?   @updatedAt
 
   tenantId String?
   buyerId  String?
@@ -1854,7 +1896,171 @@ model propertyInspections {
   createdAt DateTime  @default(now())
   updatedAt DateTime? @updatedAt
 
-  listing listings @relation(fields: [listingId], references: [id])
-  agency  agencies @relation(fields: [agencyId], references: [id])
-  agent   agents?  @relation(fields: [agentId], references: [id])
+  listing        listings         @relation(fields: [listingId], references: [id])
+  agency         agencies         @relation(fields: [agencyId], references: [id])
+  agent          agents?          @relation(fields: [agentId], references: [id])
+  escrowPayments escrowPayments[]
+}
+
+model currencies {
+  id       String  @id @default(uuid())
+  code     String  @unique // ISO 4217, e.g. "NGN", "USD"
+  name     String // "United state Dollars"
+  symbol   String? // "$"
+  isActive Boolean @default(true)
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  pricing              propertyPricing[]
+  escrowPayments       escrowPayments[]
+  agencyBankAccounts   agencyBankAccounts[]
+  propertyTransactions propertyTransactions[]
+  invoices             invoices[]
+  leases               leases[]
+  agencyWallets        agencyWallets[]
+  withdrawals          withdrawals[]
+}
+
+enum EscrowStatus {
+  PENDING_PAYMENT
+  HELD
+  RELEASED
+  REFUNDED
+  DISPUTED
+  CANCELLED
+}
+
+enum EscrowPurpose {
+  INSPECTION_FEE
+  RENT_PAYMENT
+  PURCHASE_PAYMENT
+  CAUTION_FEE
+  SERVICE_CHARGE
+}
+
+model escrowPayments {
+  id               String        @id @default(uuid())
+  purpose          EscrowPurpose
+  status           EscrowStatus
+  flwTransactionId String?       @unique // Flutterwave's numeric transaction id — needed for settle/refund calls
+
+  amount Decimal @db.Decimal(14, 2)
+
+  currencyId String     @default("NGN")
+  currency   currencies @relation(fields: [currencyId], references: [code])
+
+  payerId  String
+  payer    users    @relation(fields: [payerId], references: [id])
+  agencyId String
+  agency   agencies @relation(fields: [agencyId], references: [id])
+
+  listingId    String?
+  listing      listings?            @relation(fields: [listingId], references: [id])
+  inspectionId String?
+  inspection   propertyInspections? @relation(fields: [inspectionId], references: [id])
+  leaseId      String?
+  lease        leases?              @relation(fields: [leaseId], references: [id])
+
+  paymentRef  String?   @unique
+  gatewayName String?   @default("flutterwave")
+  paidAt      DateTime?
+  releasedAt  DateTime?
+  refundedAt  DateTime?
+
+  payerConfirmedAt  DateTime?
+  agencyConfirmedAt DateTime?
+  autoReleaseAt     DateTime? // set on HELD - cron release if unconfirmed by this date
+
+  disputeReason String?
+  disputedAt    DateTime?
+  resolvedBy    String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+}
+
+model agencyWallets {
+  id         String  @id @default(uuid())
+  agencyId   String
+  currencyId String
+  balance    Decimal @default(0) @db.Decimal(14, 2)
+
+  agency   agencies   @relation(fields: [agencyId], references: [id])
+  currency currencies @relation(fields: [currencyId], references: [code])
+
+  transactions walletTransactions[]
+  withdrawals  withdrawals[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime? @updatedAt
+
+  @@unique([agencyId, currencyId])
+}
+
+enum WalletTransactionType {
+  CREDIT
+  DEBIT
+}
+
+enum WalletTransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REVERSED
+}
+
+model walletTransactions {
+  id String @id @default(uuid())
+
+  walletId String
+  wallet   agencyWallets @relation(fields: [walletId], references: [id])
+
+  type   WalletTransactionType
+  status WalletTransactionStatus @default(COMPLETED)
+
+  amount        Decimal @db.Decimal(14, 2)
+  balanceBefore Decimal @db.Decimal(14, 2)
+  balanceAfter  Decimal @db.Decimal(14, 2)
+
+  reference String? @unique
+  purpose   String? // "ESCROW_RELEASE" | "WITHDRAWAL" | "WITHDRAWAL_REVERSAL"
+  note      String?
+
+  escrowPaymentId String?
+  withdrawalId    String?
+
+  createdAt DateTime @default(now())
+}
+
+enum WithdrawalStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model withdrawals {
+  id String @id @default(uuid())
+
+  agencyId String
+  agency   agencies @relation(fields: [agencyId], references: [id])
+
+  walletId String
+  wallet   agencyWallets @relation(fields: [walletId], references: [id])
+
+  bankAccountId String
+  bankAccount   agencyBankAccounts @relation(fields: [bankAccountId], references: [id])
+
+  amount     Decimal    @db.Decimal(14, 2)
+  currencyId String
+  currency   currencies @relation(fields: [currencyId], references: [code])
+
+  status        WithdrawalStatus @default(PENDING)
+  flwTransferId String?          @unique
+  failureReason String?
+
+  requestedAt DateTime  @default(now())
+  processedAt DateTime?
 }

@@ -11,7 +11,7 @@ eventRoutes.post(
   "/create-event",
   isAuthenticated,
   isAgent,
-  checkPermission("manage_marketing_events"),
+  checkPermission("create_marketing_events"),
   eventCtrl.createEvent,
 );
 eventRoutes.get("/list-events", eventCtrl.listEvents); // public
@@ -31,7 +31,7 @@ eventRoutes.patch(
   eventCtrl.updateEvent,
 );
 eventRoutes.patch(
-  "/end-event/:id/end",
+  "/end-event/:id",
   isAuthenticated,
   isAgent,
   checkPermission("manage_marketing_events"),
