@@ -1,6 +1,5 @@
 // controllers/listingDraft.controller.ts
 import { Response, NextFunction, Request } from "express";
-import slugify from "slugify";
 
 import { AuthError, NotFoundError, ValidationError } from "../../error-handler";
 import prisma from "../../libs/prisma";
@@ -8,6 +7,7 @@ import { generatePropertySlug } from "../../utils/generateSlug";
 import { markAgencyTaskCompleted } from "../../middleware/markTask";
 import { listingDraftSchema } from "../../common/validators/listingsDraft";
 import redis from "../../libs/redis";
+import { logInteraction } from "../../queues/interaction.queue";
 
 // ── CREATE DRAFT ──────────────────────────────────────────────────────────
 // Starts an empty (or partially seeded) draft. Frontend calls this once
@@ -336,7 +336,16 @@ export const publishDraft = async (
             status: "ACTIVE",
             publishedAt: new Date(),
             pricing: {
-              upsert: { update: u.pricing, create: u.pricing },
+              upsert: {
+                update: {
+                  ...u.pricing,
+                  currency: { connect: { code: u.pricing.currency } },
+                },
+                create: {
+                  ...u.pricing,
+                  currency: { connect: { code: u.pricing.currency } },
+                },
+              },
             },
           },
         });
@@ -414,7 +423,12 @@ export const publishDraft = async (
             availableFrom: u.availableFrom,
             status: "ACTIVE",
             publishedAt: new Date(),
-            pricing: { create: u.pricing },
+            pricing: {
+              create: {
+                ...u.pricing,
+                currency: { connect: { code: u.pricing.currency } },
+              },
+            },
           },
         });
 
@@ -496,6 +510,13 @@ export const getListingById = async (
       })
       .catch((err) => console.error("Failed to record listing view:", err));
 
+    // Only log if the viewer is authenticated — anonymous browsing has no
+    // userId to attach a recommendation profile to
+    if (req.user?.id) {
+      logInteraction(req.user.id, id, "VIEW").catch((err) =>
+        console.error("Failed to log interaction:", err),
+      );
+    }
     res.status(200).json({ success: true, listing });
   } catch (error) {
     next(error);
@@ -1074,5 +1095,27 @@ export const getPropertyAnalytics = async (
     });
   } catch (error) {
     return next(error);
+  }
+};
+
+export const saveListing = async (req: any, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    const { listingId } = req.params;
+    if (!userId) return next(new AuthError("Only users can save listings."));
+
+    await prisma.savedListings.upsert({
+      where: { userId_listingId: { userId, listingId } },
+      update: {},
+      create: { userId, listingId },
+    });
+
+    logInteraction(userId, listingId, "SAVE").catch((err) =>
+      console.error("Failed to log interaction:", err),
+    );
+
+    res.status(200).json({ success: true });
+  } catch (error) {
+    next(error);
   }
 };

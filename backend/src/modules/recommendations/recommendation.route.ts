@@ -1,13 +1,13 @@
 import express, { Router } from "express";
 import isAuthenticated from "../../middleware/isAuthenticated";
-import { getRecommendedProperties } from "./recommendation-controller";
+import { getRecommendedListings } from "./recommendation.controller";
 
 const recommendationRoutes: Router = express.Router();
 
 recommendationRoutes.get(
-  "/get-recommendation-properties",
+  "/get-recommended-listings",
   isAuthenticated,
-  getRecommendedProperties,
+  getRecommendedListings,
 );
 
 export default recommendationRoutes;

@@ -1666,3 +1666,45 @@ model withdrawals {
   processedAt DateTime?
 }
 
+enum InteractionType {
+  VIEW
+  SAVE
+  INQUIRY
+  APPLY
+  RENT
+  SALE
+}
+
+model userInteractions {
+  id        String @id @default(uuid())
+  userId    String
+  listingId String
+  type      InteractionType
+  weight    Float // precomputed from type, avoids recomputing every training run
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([listingId])
+}
+
+model listingRecommendations {
+  id        String @id @default(uuid())
+  userId    String
+  listingId String
+  score     Float
+
+  generatedAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+  @@index([userId, score])
+}
+
+model savedListings {
+  id        String   @id @default(uuid())
+  userId    String
+  listingId String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, listingId])
+}

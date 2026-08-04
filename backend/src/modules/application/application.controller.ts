@@ -4,6 +4,7 @@ import { AuthError, NotFoundError, ValidationError } from "../../error-handler";
 import prisma from "../../libs/prisma";
 import { computeOverallStatus } from "../../common/utils/application-status";
 import { markAgencyTaskCompleted } from "../../middleware/markTask";
+import { logInteraction } from "../../queues/interaction.queue";
 
 // ── CREATE — user applies to a listing ────────────────────────────────────
 export const applyToListing = async (
@@ -77,6 +78,10 @@ export const applyToListing = async (
         console.error("Failed to record application analytics:", err),
       );
 
+    logInteraction(userId, listingId, "APPLY").catch((err) =>
+      console.error("Failed to log interaction:", err),
+    );
+    
     res.status(201).json({
       success: true,
       message: "Application submitted successfully.",
